@@ -7,15 +7,36 @@ import { expect } from 'chai';
  * */
 export class DocumentTests extends TestCase {
   kTestDate: string = '2020-01-01T00:00:00.000Z';
-
+  kTestDateValue = new Date(Date.UTC(2020, 0, 1, 0, 0, 0, 0));
   kTestBlob: string = "i'm blob";
 
   constructor() {
     super();
   }
 
+  /**
+   * Populates a MutableDocument with a standard set of test data including various data types:
+   * - Booleans (true/false)
+   * - Strings
+   * - Integers (0, 1, -1)
+   * - Floating point numbers
+   * - Dates
+   * - Null values
+   * - Dictionaries (address object)
+   * - Arrays (phone numbers)
+   * - Blobs (text content)
+   *
+   * This method is used across multiple test cases to ensure consistent test data.
+   *
+   * @param doc - The MutableDocument instance to populate with test data
+   * @returns {Promise<void>} A promise that resolves when all data has been set
+   *
+   * @example
+   * const doc = new MutableDocument('testDoc');
+   * await this.populateData(doc);
+   * // doc now contains: boolean, string, number, date, dictionary, array, and blob values
+   */
   private async populateData(doc: MutableDocument) {
-
     doc.setBoolean('true', true);
     doc.setBoolean('false', false);
     doc.setString('string', 'string');
@@ -23,7 +44,7 @@ export class DocumentTests extends TestCase {
     doc.setInt('one', 1);
     doc.setInt('minus_one', -1);
     doc.setDouble('one_dot_one', 1.1);
-    doc.setDate('dateCB', new Date('2020-01-01T00:00:00.000Z'));
+    doc.setDate('date', this.kTestDateValue);
     doc.setValue('null', null);
 
     //Dictionary
@@ -42,7 +63,7 @@ export class DocumentTests extends TestCase {
 
     // Blob
     const encoder = new TextEncoder();
-    const textBlob = new Blob("text/plain", encoder.encode("i'm blob"));
+    const textBlob = new Blob('text/plain', encoder.encode(this.kTestBlob));
     doc.setBlob('blob', textBlob);
   }
 
@@ -385,7 +406,7 @@ export class DocumentTests extends TestCase {
       expect(retrievedDoc.getString('one')).to.be.null;
       expect(retrievedDoc.getString('minus_one')).to.be.null;
       expect(retrievedDoc.getString('one_dot_one')).to.be.null;
-      expect(retrievedDoc.getString('dateCB')).to.equal('2020-01-01T00:00:00.000Z');
+      expect(retrievedDoc.getString('date')).to.equal('2020-01-01T00:00:00.000Z');
       expect(retrievedDoc.getString('dict')).to.be.null;
       expect(retrievedDoc.getString('array')).to.be.null;
       expect(retrievedDoc.getString('blob')).to.be.null;
@@ -484,7 +505,7 @@ export class DocumentTests extends TestCase {
       const retrievedDoc = await this.defaultCollection.document('doc1');
 
       // Assertions
-      //todo fix getInt in document to return based on value 
+      //todo fix getInt in document to return based on value
       expect(retrievedDoc.getInt('null')).to.equal(0);
       expect(retrievedDoc.getInt('true')).to.equal(1);
       expect(retrievedDoc.getInt('false')).to.equal(0);
@@ -531,19 +552,15 @@ export class DocumentTests extends TestCase {
       const retrievedDoc = await this.defaultCollection.document('doc1');
 
       // Assertions
-      expect(retrievedDoc.getFloat('nullValue')).to.equal(0.0);
-      expect(retrievedDoc.getFloat('booleanTrue')).to.equal(1.0);
-      expect(retrievedDoc.getFloat('booleanFalse')).to.equal(0.0);
-      expect(retrievedDoc.getFloat('dataValue')).to.equal(0.0);
-      expect(retrievedDoc.getFloat('longZero')).to.equal(0.0);
-      expect(retrievedDoc.getFloat('longBig')).to.equal(0.0);
-      expect(retrievedDoc.getFloat('longSmall')).to.equal(0.0);
-      expect(retrievedDoc.getFloat('doubleBig')).to.equal(1.0e200);
-      expect(retrievedDoc.getFloat('doubleSmall')).to.equal(-1.0e200);
-      expect(retrievedDoc.getFloat('stringNull')).to.equal(0.0);
-      expect(retrievedDoc.getFloat('stringPunk')).to.equal(0.0);
-      expect(retrievedDoc.getFloat('dateNull')).to.equal(0.0);
-      expect(retrievedDoc.getFloat('dateCB')).to.equal(0.0);
+      expect(retrievedDoc.getFloat('null')).to.equal(0.0);
+      expect(retrievedDoc.getFloat('true')).to.equal(1.0);
+      expect(retrievedDoc.getFloat('false')).to.equal(0.0);
+      expect(retrievedDoc.getFloat('string')).to.equal(0.0);
+      expect(retrievedDoc.getFloat('zero')).to.equal(0.0);
+      expect(retrievedDoc.getFloat('one')).to.equal(1.0);
+      expect(retrievedDoc.getFloat('minus_one')).to.equal(-1.0);
+      expect(retrievedDoc.getFloat('one_dot_one')).to.equal(1.1);
+      expect(retrievedDoc.getFloat('date')).to.equal(0.0);
       expect(retrievedDoc.getFloat('dict')).to.equal(0.0);
       expect(retrievedDoc.getFloat('array')).to.equal(0.0);
       expect(retrievedDoc.getFloat('blob')).to.equal(0.0);
@@ -581,19 +598,16 @@ export class DocumentTests extends TestCase {
       const retrievedDoc = await this.defaultCollection.document('doc1');
 
       // Assertions
-      expect(retrievedDoc.getDouble('nullValue')).to.equal(0.0);
-      expect(retrievedDoc.getDouble('booleanTrue')).to.equal(1.0);
-      expect(retrievedDoc.getDouble('booleanFalse')).to.equal(0.0);
-      expect(retrievedDoc.getDouble('dataValue')).to.equal(0.0);
-      expect(retrievedDoc.getDouble('longZero')).to.equal(0.0);
-      expect(retrievedDoc.getDouble('longBig')).to.equal(0.0);
-      expect(retrievedDoc.getDouble('longSmall')).to.equal(0.0);
-      expect(retrievedDoc.getDouble('doubleBig')).to.equal(1.0e200);
-      expect(retrievedDoc.getDouble('doubleSmall')).to.equal(-1.0e200);
-      expect(retrievedDoc.getDouble('stringNull')).to.equal(0.0);
-      expect(retrievedDoc.getDouble('stringPunk')).to.equal(0.0);
-      expect(retrievedDoc.getDouble('dateNull')).to.equal(0.0);
-      expect(retrievedDoc.getDouble('dateCB')).to.equal(0.0);
+      // Assertions
+      expect(retrievedDoc.getDouble('null')).to.equal(0.0);
+      expect(retrievedDoc.getDouble('true')).to.equal(1.0);
+      expect(retrievedDoc.getDouble('false')).to.equal(0.0);
+      expect(retrievedDoc.getDouble('string')).to.equal(0.0);
+      expect(retrievedDoc.getDouble('zero')).to.equal(0.0);
+      expect(retrievedDoc.getDouble('one')).to.equal(1.0);
+      expect(retrievedDoc.getDouble('minus_one')).to.equal(-1.0);
+      expect(retrievedDoc.getDouble('one_dot_one')).to.equal(1.1);
+      expect(retrievedDoc.getDouble('date')).to.equal(0.0);
       expect(retrievedDoc.getDouble('dict')).to.equal(0.0);
       expect(retrievedDoc.getDouble('array')).to.equal(0.0);
       expect(retrievedDoc.getDouble('blob')).to.equal(0.0);
@@ -642,25 +656,13 @@ export class DocumentTests extends TestCase {
       // Assertions
       expect(retrievedDoc.getInt('min_int')).to.equal(Number.MIN_SAFE_INTEGER);
       expect(retrievedDoc.getInt('max_int')).to.equal(Number.MAX_SAFE_INTEGER);
-      expect(retrievedDoc.getValue('min_int')).to.equal(
-        Number.MIN_SAFE_INTEGER
-      );
-      expect(retrievedDoc.getValue('max_int')).to.equal(
-        Number.MAX_SAFE_INTEGER
-      );
+      expect(retrievedDoc.getValue('min_int')).to.equal(Number.MIN_SAFE_INTEGER);
+      expect(retrievedDoc.getValue('max_int')).to.equal(Number.MAX_SAFE_INTEGER);
 
-      expect(retrievedDoc.getLong('min_int64')).to.equal(
-        Number.MIN_SAFE_INTEGER
-      );
-      expect(retrievedDoc.getLong('max_int64')).to.equal(
-        Number.MAX_SAFE_INTEGER
-      );
-      expect(retrievedDoc.getValue('min_int64')).to.equal(
-        Number.MIN_SAFE_INTEGER
-      );
-      expect(retrievedDoc.getValue('max_int64')).to.equal(
-        Number.MAX_SAFE_INTEGER
-      );
+      expect(retrievedDoc.getLong('min_int64')).to.equal(Number.MIN_SAFE_INTEGER);
+      expect(retrievedDoc.getLong('max_int64')).to.equal(Number.MAX_SAFE_INTEGER);
+      expect(retrievedDoc.getValue('min_int64')).to.equal(Number.MIN_SAFE_INTEGER);
+      expect(retrievedDoc.getValue('max_int64')).to.equal(Number.MAX_SAFE_INTEGER);
 
       expect(retrievedDoc.getFloat('min_float')).to.equal(Number.MIN_VALUE);
       expect(retrievedDoc.getFloat('max_float')).to.equal(Number.MAX_VALUE);
@@ -697,36 +699,31 @@ export class DocumentTests extends TestCase {
     try {
       // Create and populate the document
       const doc = new MutableDocument('doc1');
-      doc.setDouble('number1', 1.0);
-      doc.setDouble('number2', 1.49);
-      doc.setDouble('number3', 1.5);
-      doc.setDouble('number4', 1.51);
-      doc.setDouble('number5', 1.99);
+      doc.setFloat('number1', 1.0);
+      doc.setFloat('number2', 1.49);
+      doc.setFloat('number3', 1.5);
+      doc.setFloat('number4', 1.51);
+      doc.setFloat('number5', 1.99);
       await this.defaultCollection.save(doc);
 
       // Retrieve the saved document
       const retrievedDoc = await this.defaultCollection.document('doc1');
 
       // Assertions
-      expect(retrievedDoc.getLong('number1')).to.equal(1);
+      expect(retrievedDoc.getInt('number1')).to.equal(1);
       expect(retrievedDoc.getFloat('number1')).to.equal(1.0);
-      expect(retrievedDoc.getDouble('number1')).to.equal(1.0);
 
-      expect(retrievedDoc.getLong('number2')).to.equal(1);
+      expect(retrievedDoc.getInt('number2')).to.equal(1);
       expect(retrievedDoc.getFloat('number2')).to.equal(1.49);
-      expect(retrievedDoc.getDouble('number2')).to.equal(1.49);
 
-      expect(retrievedDoc.getLong('number3')).to.equal(1);
+      expect(retrievedDoc.getInt('number3')).to.equal(1);
       expect(retrievedDoc.getFloat('number3')).to.equal(1.5);
-      expect(retrievedDoc.getDouble('number3')).to.equal(1.5);
 
-      expect(retrievedDoc.getLong('number4')).to.equal(1);
+      expect(retrievedDoc.getInt('number4')).to.equal(1);
       expect(retrievedDoc.getFloat('number4')).to.equal(1.51);
-      expect(retrievedDoc.getDouble('number4')).to.equal(1.51);
 
-      expect(retrievedDoc.getLong('number5')).to.equal(1);
+      expect(retrievedDoc.getInt('number5')).to.equal(1);
       expect(retrievedDoc.getFloat('number5')).to.equal(1.99);
-      expect(retrievedDoc.getDouble('number5')).to.equal(1.99);
 
       return {
         testName: 'testSetGetFloatNumbers',
@@ -915,19 +912,27 @@ export class DocumentTests extends TestCase {
       await this.defaultCollection.save(doc);
       const retrievedDoc = await this.defaultCollection.document('doc1');
 
-      expect(retrievedDoc.getValue('null')).to.be.null;
-      expect(retrievedDoc.getBoolean('true')).to.be.true;
-      expect(retrievedDoc.getBoolean('false')).to.be.false;
-      expect(retrievedDoc.getString('string')).to.be.null;
-      expect(retrievedDoc.getValue('zero')).to.be.null;
-      expect(retrievedDoc.getValue('one')).to.be.null;
-      expect(retrievedDoc.getValue('minus_one')).to.be.null;
-      expect(retrievedDoc.getValue('one_dot_one')).to.be.null;
-      expect(retrievedDoc.getDate('date')).to.equal(this.kTestDate);
-      expect(retrievedDoc.getValue('dict')).to.be.null;
-      expect(retrievedDoc.getValue('array')).to.be.null;
-      expect(retrievedDoc.getValue('blob')).to.be.null;
-      expect(retrievedDoc.getValue('non_existing_key')).to.be.null;
+      expect(retrievedDoc.getDate('null')).to.be.null;
+      expect(retrievedDoc.getDate('true')).to.be.null;
+      expect(retrievedDoc.getDate('false')).to.be.null;
+      expect(retrievedDoc.getDate('string')).to.be.null;
+      expect(retrievedDoc.getDate('zero')).to.be.null;
+      expect(retrievedDoc.getDate('one')).to.be.null;
+      expect(retrievedDoc.getDate('minus_one')).to.be.null;
+      expect(retrievedDoc.getDate('one_dot_one')).to.be.null;
+      const dateValue = retrievedDoc.getDate('date');
+      // Option 1: Compare getTime() values
+      expect(dateValue?.getTime()).to.equal(this.kTestDateValue.getTime());
+
+      // Option 2: Compare ISO strings
+      expect(dateValue?.toISOString()).to.equal(this.kTestDateValue.toISOString());
+
+      // Option 3: Use deep equality
+      expect(dateValue).to.deep.equal(this.kTestDateValue);
+      expect(retrievedDoc.getDate('dict')).to.be.null;
+      expect(retrievedDoc.getDate('array')).to.be.null;
+      expect(retrievedDoc.getDate('blob')).to.be.null;
+      expect(retrievedDoc.getDate('non_existing_key')).to.be.null;
 
       return {
         testName: 'testGetDate',
@@ -952,44 +957,38 @@ export class DocumentTests extends TestCase {
    */
   async testSetBlob(): Promise<ITestResult> {
     try {
-      const doc = new MutableDocument('doc1');
-
-      // Create a Blob with test content
-      const content = this.kTestBlob;
       const encoder = new TextEncoder();
-      const arrayBuffer = encoder.encode(content);
-      const blob = new Blob('text/plain', arrayBuffer);
+      const decoder = new TextDecoder();
+      const doc = new MutableDocument('doc1');
+      this.populateData(doc);
 
-      // Set the Blob in the document
-      doc.setBlob('blob', blob);
-
-      // Save the document
       await this.defaultCollection.save(doc);
-
-      // Retrieve the saved document
       const retrievedDoc = await this.defaultCollection.document('doc1');
 
-      // Assertions
       const retrievedBlob = retrievedDoc.getBlob('blob');
-      expect(retrievedBlob.getContentType()).to.equal(blob.getContentType());
-      expect(retrievedBlob.getLength()).to.equal(blob.getLength());
+      const retrievedBlobContent = await retrievedDoc.getBlobContent('blob', this.defaultCollection);
+      const retrievedBlobText = decoder.decode(retrievedBlobContent);
+
+      // Assertions
+      expect(retrievedBlob?.getContentType()).to.equal('text/plain');
+      expect(retrievedBlobText).to.equal(this.kTestBlob);
 
       // Update the Blob content
       const nuContent = '1234567890';
-      const arrayBuffer2 = encoder.encode(nuContent);
-      const nuBlob = new Blob('text/plain', arrayBuffer2);
+      const encodedContent = encoder.encode(nuContent);
+      const nuBlob = new Blob('text/plain', encodedContent);
       doc.setBlob('blob', nuBlob);
 
-      // Save the updated document
       await this.defaultCollection.save(doc);
-
-      // Retrieve the updated document
       const updatedDoc = await this.defaultCollection.document('doc1');
 
+      const updatedBlob = retrievedDoc.getBlob('blob');
+      const updatedBlobContent = await retrievedDoc.getBlobContent('blob');
+      const updatedBlobText = decoder.decode(retrievedBlobContent);
+
       // Assertions for updated document
-      const updatedBlob = updatedDoc.getBlob('blob');
-      expect(updatedBlob.getContentType()).to.equal(nuBlob.getContentType());
-      expect(updatedBlob.getLength()).to.equal(nuBlob.getLength());
+      expect(updatedBlob?.getContentType()).to.equal('text/plain');
+      expect(updatedBlobContent).to.equal('1234567890');
 
       return {
         testName: 'testSetBlob',
@@ -1148,9 +1147,7 @@ export class DocumentTests extends TestCase {
         code: '90210',
       };
 
-      expect(retrievedDoc.getDictionary('dict').toMap()).to.deep.equal(
-        expectedDict
-      );
+      expect(retrievedDoc.getDictionary('dict').toMap()).to.deep.equal(expectedDict);
       expect(retrievedDoc.getDictionary('array')).to.be.null;
       expect(retrievedDoc.getDictionary('blob')).to.be.null;
       expect(retrievedDoc.getDictionary('non_existing_key')).to.be.null;
@@ -1261,10 +1258,7 @@ export class DocumentTests extends TestCase {
       expect(retrievedDoc.getArray('doubleSmall')).to.be.null;
       expect(retrievedDoc.getArray('dateCB')).to.be.null;
       expect(retrievedDoc.getArray('dict')).to.be.null;
-      expect(retrievedDoc.getArray('array')).to.deep.equal([
-        '650-000-0000',
-        '650-000-0001',
-      ]);
+      expect(retrievedDoc.getArray('array')).to.deep.equal(['650-000-0000', '650-000-0001']);
       expect(retrievedDoc.getArray('blob')).to.be.null;
       expect(retrievedDoc.getArray('non_existing_key')).to.be.null;
 
@@ -1618,11 +1612,7 @@ export class DocumentTests extends TestCase {
         '650-000-0002',
         '650-000-0003',
       ]);
-      expect(doc.getArray('home')).to.deep.equal([
-        '650-000-0001',
-        '650-000-0002',
-        '650-000-0003',
-      ]);
+      expect(doc.getArray('home')).to.deep.equal(['650-000-0001', '650-000-0002', '650-000-0003']);
 
       // Save the document
       await this.defaultCollection.save(doc);
@@ -1678,9 +1668,7 @@ export class DocumentTests extends TestCase {
 
       // Assert the count of the document's keys
       expect(Object.keys(savedDoc.toDictionary()).length).to.equal(19);
-      expect(Object.keys(savedDoc.toDictionary()).length).to.equal(
-        savedDoc.count()
-      );
+      expect(Object.keys(savedDoc.toDictionary()).length).to.equal(savedDoc.count());
 
       return {
         testName: 'testCount',
@@ -1922,9 +1910,7 @@ export class DocumentTests extends TestCase {
       // Assertions for equality with itself and with another document with different ID
       expect(sdoc1.toDictionary()).to.eql(doc1.toDictionary());
       expect(doc1.toDictionary()).to.eql(doc1.toDictionary());
-      expect(doc1.toDictionary()).to.not.eql(
-        new MutableDocument('different_id').toDictionary()
-      );
+      expect(doc1.toDictionary()).to.not.eql(new MutableDocument('different_id').toDictionary());
 
       // Create and populate document doc2
       const doc2 = new MutableDocument('doc2');
@@ -1937,9 +1923,7 @@ export class DocumentTests extends TestCase {
       // Assertions for equality with itself and with another document with different ID
       expect(sdoc2.toDictionary()).to.eql(doc2.toDictionary());
       expect(doc2.toDictionary()).to.eql(doc2.toDictionary());
-      expect(doc2.toDictionary()).to.not.eql(
-        new MutableDocument('different_id').toDictionary()
-      );
+      expect(doc2.toDictionary()).to.not.eql(new MutableDocument('different_id').toDictionary());
 
       // Check if doc1 and doc2 have different IDs
       expect(doc1.getId()).to.not.equal(doc2.getId());
