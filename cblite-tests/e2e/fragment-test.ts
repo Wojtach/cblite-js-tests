@@ -1,5 +1,5 @@
-import { TestCase } from './test-case';
-import { ITestResult } from './test-result.types';
+import { TestCase } from "./test-case";
+import { ITestResult } from "./test-result.types";
 
 /**
  * FragmentTests - reminder all test cases must start with 'test' in the name of the method or they will not run
@@ -14,9 +14,9 @@ export class FragmentTests extends TestCase {
    */
   async testBasicGetFragmentValues(): Promise<ITestResult> {
     return {
-      testName: 'testBasicGetFragmentValues',
+      testName: "testBasicGetFragmentValues",
       success: false,
-      message: 'Not implemented',
+      message: "Not implemented",
       data: undefined,
     };
   }
@@ -25,9 +25,9 @@ export class FragmentTests extends TestCase {
    */
   async testBasicSetFragmentValues(): Promise<ITestResult> {
     return {
-      testName: 'testBasicSetFragmentValues',
+      testName: "testBasicSetFragmentValues",
       success: false,
-      message: 'Not implemented',
+      message: "Not implemented",
       data: undefined,
     };
   }
@@ -36,9 +36,9 @@ export class FragmentTests extends TestCase {
    */
   async testGetDocFragmentWithID(): Promise<ITestResult> {
     return {
-      testName: 'testGetDocFragmentWithID',
+      testName: "testGetDocFragmentWithID",
       success: false,
-      message: 'Not implemented',
+      message: "Not implemented",
       data: undefined,
     };
   }
@@ -47,9 +47,9 @@ export class FragmentTests extends TestCase {
    */
   async testGetDocFragmentWithNonExistingID(): Promise<ITestResult> {
     return {
-      testName: 'testGetDocFragmentWithNonExistingID',
+      testName: "testGetDocFragmentWithNonExistingID",
       success: false,
-      message: 'Not implemented',
+      message: "Not implemented",
       data: undefined,
     };
   }
@@ -58,9 +58,9 @@ export class FragmentTests extends TestCase {
    */
   async testGetFragmentFromDictionaryValue(): Promise<ITestResult> {
     return {
-      testName: 'testGetFragmentFromDictionaryValue',
+      testName: "testGetFragmentFromDictionaryValue",
       success: false,
-      message: 'Not implemented',
+      message: "Not implemented",
       data: undefined,
     };
   }
@@ -70,9 +70,9 @@ export class FragmentTests extends TestCase {
    */
   async testGetFragmentFromArrayValue(): Promise<ITestResult> {
     return {
-      testName: 'testGetFragmentFromArrayValue',
+      testName: "testGetFragmentFromArrayValue",
       success: false,
-      message: 'Not implemented',
+      message: "Not implemented",
       data: undefined,
     };
   }
@@ -82,9 +82,9 @@ export class FragmentTests extends TestCase {
    */
   async testGetFragmentFromInteger(): Promise<ITestResult> {
     return {
-      testName: 'testGetFragmentFromInteger',
+      testName: "testGetFragmentFromInteger",
       success: false,
-      message: 'Not implemented',
+      message: "Not implemented",
       data: undefined,
     };
   }
@@ -94,9 +94,9 @@ export class FragmentTests extends TestCase {
    */
   async testGetFragmentFromFloat(): Promise<ITestResult> {
     return {
-      testName: 'testGetFragmentFromFloat',
+      testName: "testGetFragmentFromFloat",
       success: false,
-      message: 'Not implemented',
+      message: "Not implemented",
       data: undefined,
     };
   }
@@ -106,9 +106,9 @@ export class FragmentTests extends TestCase {
    */
   async testGetFragmentFromDouble(): Promise<ITestResult> {
     return {
-      testName: 'testGetFragmentFromDouble',
+      testName: "testGetFragmentFromDouble",
       success: false,
-      message: 'Not implemented',
+      message: "Not implemented",
       data: undefined,
     };
   }
@@ -118,9 +118,9 @@ export class FragmentTests extends TestCase {
    */
   async testGetFragmentFromBoolean(): Promise<ITestResult> {
     return {
-      testName: 'testGetFragmentFromBoolean',
+      testName: "testGetFragmentFromBoolean",
       success: false,
-      message: 'Not implemented',
+      message: "Not implemented",
       data: undefined,
     };
   }
@@ -130,9 +130,9 @@ export class FragmentTests extends TestCase {
    */
   async testGetFragmentFromDate(): Promise<ITestResult> {
     return {
-      testName: 'testGetFragmentFromDate',
+      testName: "testGetFragmentFromDate",
       success: false,
-      message: 'Not implemented',
+      message: "Not implemented",
       data: undefined,
     };
   }
@@ -142,9 +142,9 @@ export class FragmentTests extends TestCase {
    */
   async testGetFragmentFromString(): Promise<ITestResult> {
     return {
-      testName: 'testGetFragmentFromString',
+      testName: "testGetFragmentFromString",
       success: false,
-      message: 'Not implemented',
+      message: "Not implemented",
       data: undefined,
     };
   }
@@ -154,9 +154,9 @@ export class FragmentTests extends TestCase {
    */
   async testGetNestedDictionaryFragment(): Promise<ITestResult> {
     return {
-      testName: 'testGetNestedDictionaryFragment',
+      testName: "testGetNestedDictionaryFragment",
       success: false,
-      message: 'Not implemented',
+      message: "Not implemented",
       data: undefined,
     };
   }
@@ -166,9 +166,9 @@ export class FragmentTests extends TestCase {
    */
   async testGetNestedNonExistingDictionaryFragment(): Promise<ITestResult> {
     return {
-      testName: 'testGetNestedNonExistingDictionaryFragment',
+      testName: "testGetNestedNonExistingDictionaryFragment",
       success: false,
-      message: 'Not implemented',
+      message: "Not implemented",
       data: undefined,
     };
   }
@@ -178,9 +178,9 @@ export class FragmentTests extends TestCase {
    */
   async testGetNestedArrayFragments(): Promise<ITestResult> {
     return {
-      testName: 'testGetNestedArrayFragments',
+      testName: "testGetNestedArrayFragments",
       success: false,
-      message: 'Not implemented',
+      message: "Not implemented",
       data: undefined,
     };
   }
@@ -190,9 +190,9 @@ export class FragmentTests extends TestCase {
    */
   async testGetNestedNonExistingArrayFragments(): Promise<ITestResult> {
     return {
-      testName: 'testGetNestedNonExistingArrayFragments',
+      testName: "testGetNestedNonExistingArrayFragments",
       success: false,
-      message: 'Not implemented',
+      message: "Not implemented",
       data: undefined,
     };
   }
@@ -202,9 +202,9 @@ export class FragmentTests extends TestCase {
    */
   async testDictionaryFragmentSet(): Promise<ITestResult> {
     return {
-      testName: 'testDictionaryFragmentSet',
+      testName: "testDictionaryFragmentSet",
       success: false,
-      message: 'Not implemented',
+      message: "Not implemented",
       data: undefined,
     };
   }
@@ -214,9 +214,9 @@ export class FragmentTests extends TestCase {
    */
   async testDictionaryFragmentsetData(): Promise<ITestResult> {
     return {
-      testName: 'testDictionaryFragmentsetData',
+      testName: "testDictionaryFragmentsetData",
       success: false,
-      message: 'Not implemented',
+      message: "Not implemented",
       data: undefined,
     };
   }
@@ -226,9 +226,9 @@ export class FragmentTests extends TestCase {
    */
   async testDictionaryFragmentSetArray(): Promise<ITestResult> {
     return {
-      testName: 'testDictionaryFragmentSetArray',
+      testName: "testDictionaryFragmentSetArray",
       success: false,
-      message: 'Not implemented',
+      message: "Not implemented",
       data: undefined,
     };
   }
@@ -238,9 +238,9 @@ export class FragmentTests extends TestCase {
    */
   async testNonDictionaryFragmentsetValue(): Promise<ITestResult> {
     return {
-      testName: 'testNonDictionaryFragmentsetValue',
+      testName: "testNonDictionaryFragmentsetValue",
       success: false,
-      message: 'Not implemented',
+      message: "Not implemented",
       data: undefined,
     };
   }
@@ -250,9 +250,9 @@ export class FragmentTests extends TestCase {
    */
   async testArrayFragmentsetData(): Promise<ITestResult> {
     return {
-      testName: 'testArrayFragmentsetData',
+      testName: "testArrayFragmentsetData",
       success: false,
-      message: 'Not implemented',
+      message: "Not implemented",
       data: undefined,
     };
   }
@@ -262,9 +262,9 @@ export class FragmentTests extends TestCase {
    */
   async testArrayFragmentSetArrayObject(): Promise<ITestResult> {
     return {
-      testName: 'testArrayFragmentSetArrayObject',
+      testName: "testArrayFragmentSetArrayObject",
       success: false,
-      message: 'Not implemented',
+      message: "Not implemented",
       data: undefined,
     };
   }
@@ -274,9 +274,9 @@ export class FragmentTests extends TestCase {
    */
   async testArrayFragmentSetArray(): Promise<ITestResult> {
     return {
-      testName: 'testArrayFragmentSetArray',
+      testName: "testArrayFragmentSetArray",
       success: false,
-      message: 'Not implemented',
+      message: "Not implemented",
       data: undefined,
     };
   }
@@ -286,22 +286,22 @@ export class FragmentTests extends TestCase {
    */
   async testNonExistingArrayFragmentsetValue(): Promise<ITestResult> {
     return {
-      testName: 'testNonExistingArrayFragmentsetValue',
+      testName: "testNonExistingArrayFragmentsetValue",
       success: false,
-      message: 'Not implemented',
+      message: "Not implemented",
       data: undefined,
     };
   }
 
-    /**
+  /**
    * @returns {Promise<ITestResult>} A promise that resolves to an ITestResult object which contains the result of the verification.
    */
-    async testOutOfRangeArrayFragmentsetValue(): Promise<ITestResult> {
-      return {
-        testName: 'testOutOfRangeArrayFragmentsetValue',
-        success: false,
-        message: 'Not implemented',
-        data: undefined,
-      };
-    }
+  async testOutOfRangeArrayFragmentsetValue(): Promise<ITestResult> {
+    return {
+      testName: "testOutOfRangeArrayFragmentsetValue",
+      success: false,
+      message: "Not implemented",
+      data: undefined,
+    };
+  }
 }

@@ -1,14 +1,14 @@
-import { TestCase } from './test-case';
-import { ITestResult } from './test-result.types';
+import { TestCase } from "./test-case";
+import { ITestResult } from "./test-result.types";
 import {
   BasicAuthenticator,
   Replicator,
   ReplicatorActivityLevel,
   ReplicatorConfiguration,
   ReplicatorType,
-  URLEndpoint
-} from '../../cblite';
-import {expect} from "chai";
+  URLEndpoint,
+} from "cblite-js";
+import { expect } from "chai";
 
 /**
  * ReplicatorTests - reminder all test cases must start with 'test' in the name of the method or they will not run
@@ -23,7 +23,7 @@ export class ReplicatorTests extends TestCase {
    * @returns {Promise<ITestResult>} A promise that resolves to an ITestResult object which contains the result of the verification.
    */
   async testReplicatorConfigDefaultValues(): Promise<ITestResult> {
-    const target = new URLEndpoint('ws://localhost:4984/db');
+    const target = new URLEndpoint("ws://localhost:4984/db");
     const config = new ReplicatorConfiguration(target);
     config.addCollection(this.collection);
 
@@ -31,32 +31,50 @@ export class ReplicatorTests extends TestCase {
       //check to make sure that the default values are being set in the configuration
       expect(config.getCollections().length).to.be.equal(1);
       expect(config.getCollections()[0]).to.be.equal(this.collection);
-      expect(config.getReplicatorType()).to.be.equal(ReplicatorType.PUSH_AND_PULL);
+      expect(config.getReplicatorType()).to.be.equal(
+        ReplicatorType.PUSH_AND_PULL
+      );
 
-      expect(config.getAcceptOnlySelfSignedCerts()).to.be.equal(ReplicatorConfiguration.defaultSelfSignedCertificateOnly);
-      expect(config.getAllowReplicatingInBackground()).to.be.equal(ReplicatorConfiguration.defaultAllowReplicatingInBackground);
-      expect(config.getAcceptParentDomainCookies()).to.be.equal(ReplicatorConfiguration.defaultAcceptParentDomainCookies);
-      expect(config.getAutoPurgeEnabled()).to.be.equal(ReplicatorConfiguration.defaultEnableAutoPurge);
-      expect(config.getContinuous()).to.be.equal(ReplicatorConfiguration.defaultContinuous);
-      expect(config.getHeartbeat()).to.be.equal(ReplicatorConfiguration.defaultHeartbeat);
-      expect(config.getMaxAttempts()).to.be.equal(ReplicatorConfiguration.defaultMaxAttemptsSingleShot);
-      expect(config.getMaxAttemptWaitTime()).to.be.equal(ReplicatorConfiguration.defaultMaxAttemptsWaitTime);
+      expect(config.getAcceptOnlySelfSignedCerts()).to.be.equal(
+        ReplicatorConfiguration.defaultSelfSignedCertificateOnly
+      );
+      expect(config.getAllowReplicatingInBackground()).to.be.equal(
+        ReplicatorConfiguration.defaultAllowReplicatingInBackground
+      );
+      expect(config.getAcceptParentDomainCookies()).to.be.equal(
+        ReplicatorConfiguration.defaultAcceptParentDomainCookies
+      );
+      expect(config.getAutoPurgeEnabled()).to.be.equal(
+        ReplicatorConfiguration.defaultEnableAutoPurge
+      );
+      expect(config.getContinuous()).to.be.equal(
+        ReplicatorConfiguration.defaultContinuous
+      );
+      expect(config.getHeartbeat()).to.be.equal(
+        ReplicatorConfiguration.defaultHeartbeat
+      );
+      expect(config.getMaxAttempts()).to.be.equal(
+        ReplicatorConfiguration.defaultMaxAttemptsSingleShot
+      );
+      expect(config.getMaxAttemptWaitTime()).to.be.equal(
+        ReplicatorConfiguration.defaultMaxAttemptsWaitTime
+      );
 
       expect(config.getHeaders()).to.be.equal(undefined);
       expect(config.getAuthenticator()).to.be.equal(undefined);
       return {
-        testName: 'testReplicatorConfigDefaultValues',
+        testName: "testReplicatorConfigDefaultValues",
         success: true,
         message: `success`,
         data: undefined,
       };
     } catch (error) {
-        return {
-          testName: 'testReplicatorConfigDefaultValues',
-          success: false,
-          message: `${error}`,
-          data: undefined,
-        };
+      return {
+        testName: "testReplicatorConfigDefaultValues",
+        success: false,
+        message: `${error}`,
+        data: undefined,
+      };
     }
   }
 
@@ -66,11 +84,10 @@ export class ReplicatorTests extends TestCase {
    */
   async testReplicationStatusChangeListenerEvent(): Promise<ITestResult> {
     try {
-
       //this is using the replication configuration from the Android Kotlin Learning path
       //**TODO update to use the new configuration and endpoint**
-      const target = new URLEndpoint('ws://localhost:4984/projects');
-      const auth = new BasicAuthenticator('demo@example.com', 'P@ssw0rd12');
+      const target = new URLEndpoint("ws://localhost:4984/projects");
+      const auth = new BasicAuthenticator("demo@example.com", "P@ssw0rd12");
       const config = new ReplicatorConfiguration(target);
       config.addCollection(this.defaultCollection);
       config.setAuthenticator(auth);
@@ -80,14 +97,13 @@ export class ReplicatorTests extends TestCase {
 
       const replicator = await Replicator.create(config);
       const token = await replicator.addChangeListener((change) => {
-
         //check to see if there was an error
         const error = change.status.getError();
         if (error !== undefined) {
           isError = true;
         }
         //get the status of the replicator using ReplicatorActivityLevel enum
-        if (change.status.getActivityLevel() ===  ReplicatorActivityLevel.IDLE) {
+        if (change.status.getActivityLevel() === ReplicatorActivityLevel.IDLE) {
           //do something because the replicator is now IDLE
         }
         didGetChangeStatus = true;
@@ -113,14 +129,14 @@ export class ReplicatorTests extends TestCase {
       expect(didGetChangeStatus).to.be.true;
 
       return {
-        testName: 'testReplicationStatusChangeListenerEvent',
+        testName: "testReplicationStatusChangeListenerEvent",
         success: true,
         message: `success`,
         data: undefined,
       };
     } catch (error) {
       return {
-        testName: 'testReplicationStatusChangeListenerEvent',
+        testName: "testReplicationStatusChangeListenerEvent",
         success: false,
         message: `${error}`,
         data: undefined,
@@ -134,11 +150,10 @@ export class ReplicatorTests extends TestCase {
    */
   async testDocumentChangeListenerEvent(): Promise<ITestResult> {
     try {
-
       //this is using the replication configuration from the Android Kotlin Learning path
       //**TODO update to use the new configuration and endpoint**
-      const target = new URLEndpoint('ws://localhost:4984/projects');
-      const auth = new BasicAuthenticator('demo@example.com', 'P@ssw0rd12');
+      const target = new URLEndpoint("ws://localhost:4984/projects");
+      const auth = new BasicAuthenticator("demo@example.com", "P@ssw0rd12");
       const config = new ReplicatorConfiguration(target);
       config.addCollection(this.defaultCollection);
       config.setAuthenticator(auth);
@@ -154,13 +169,13 @@ export class ReplicatorTests extends TestCase {
         const isPush = change.isPush;
         //loop through documents
         for (const doc of change.documents) {
-            //details of each document along with if there was an error on that doc
-            const id = doc.id;
-            const flags = doc.flags;
-            const error = doc.error;
-            if (error !== undefined) {
-                isError = true;
-            }
+          //details of each document along with if there was an error on that doc
+          const id = doc.id;
+          const flags = doc.flags;
+          const error = doc.error;
+          if (error !== undefined) {
+            isError = true;
+          }
         }
         didGetDocumentUpdate = true;
       });
@@ -185,14 +200,14 @@ export class ReplicatorTests extends TestCase {
       expect(didGetDocumentUpdate).to.be.true;
 
       return {
-        testName: 'testDocumentChangeListenerEvent',
+        testName: "testDocumentChangeListenerEvent",
         success: true,
         message: `success`,
         data: undefined,
       };
     } catch (error) {
       return {
-        testName: 'testDocumentChangeListenerEvent',
+        testName: "testDocumentChangeListenerEvent",
         success: false,
         message: `Error:${error}`,
         data: undefined,
@@ -200,16 +215,15 @@ export class ReplicatorTests extends TestCase {
     }
   }
 
-
   /**
    *
    * @returns {Promise<ITestResult>} A promise that resolves to an ITestResult object which contains the result of the verification.
    */
   async testEmptyPush(): Promise<ITestResult> {
     return {
-      testName: 'testEmptyPush',
+      testName: "testEmptyPush",
       success: false,
-      message: 'Not implemented',
+      message: "Not implemented",
       data: undefined,
     };
   }
@@ -220,9 +234,9 @@ export class ReplicatorTests extends TestCase {
    */
   async testStartWithCheckpoint(): Promise<ITestResult> {
     return {
-      testName: 'testStartWithCheckpoint',
+      testName: "testStartWithCheckpoint",
       success: false,
-      message: 'Not implemented',
+      message: "Not implemented",
       data: undefined,
     };
   }
@@ -233,9 +247,9 @@ export class ReplicatorTests extends TestCase {
    */
   async testStartWithResetCheckpointContinuous(): Promise<ITestResult> {
     return {
-      testName: 'testStartWithResetCheckpointContinuous',
+      testName: "testStartWithResetCheckpointContinuous",
       success: false,
-      message: 'Not implemented',
+      message: "Not implemented",
       data: undefined,
     };
   }
@@ -246,9 +260,9 @@ export class ReplicatorTests extends TestCase {
    */
   async testRemoveDocumentReplicationListener(): Promise<ITestResult> {
     return {
-      testName: 'testRemoveDocumentReplicationListener',
+      testName: "testRemoveDocumentReplicationListener",
       success: false,
-      message: 'Not implemented',
+      message: "Not implemented",
       data: undefined,
     };
   }
@@ -259,9 +273,9 @@ export class ReplicatorTests extends TestCase {
    */
   async testDocumentReplicationEventWithPushConflict(): Promise<ITestResult> {
     return {
-      testName: 'testDocumentReplicationEventWithPushConflict',
+      testName: "testDocumentReplicationEventWithPushConflict",
       success: false,
-      message: 'Not implemented',
+      message: "Not implemented",
       data: undefined,
     };
   }
@@ -272,9 +286,9 @@ export class ReplicatorTests extends TestCase {
    */
   async testDocumentReplicationEventWithPullConflict(): Promise<ITestResult> {
     return {
-      testName: 'testDocumentReplicationEventWithPullConflict',
+      testName: "testDocumentReplicationEventWithPullConflict",
       success: false,
-      message: 'Not implemented',
+      message: "Not implemented",
       data: undefined,
     };
   }
@@ -285,9 +299,9 @@ export class ReplicatorTests extends TestCase {
    */
   async testDocumentReplicationEventWithDeletion(): Promise<ITestResult> {
     return {
-      testName: 'testDocumentReplicationEventWithDeletion',
+      testName: "testDocumentReplicationEventWithDeletion",
       success: false,
-      message: 'Not implemented',
+      message: "Not implemented",
       data: undefined,
     };
   }
@@ -298,9 +312,9 @@ export class ReplicatorTests extends TestCase {
    */
   async testSingleShotPushFilter(): Promise<ITestResult> {
     return {
-      testName: 'testSingleShotPushFilter',
+      testName: "testSingleShotPushFilter",
       success: false,
-      message: 'Not implemented',
+      message: "Not implemented",
       data: undefined,
     };
   }
@@ -311,9 +325,9 @@ export class ReplicatorTests extends TestCase {
    */
   async testContinuousPushFilter(): Promise<ITestResult> {
     return {
-      testName: 'testContinuousPushFilter',
+      testName: "testContinuousPushFilter",
       success: false,
-      message: 'Not implemented',
+      message: "Not implemented",
       data: undefined,
     };
   }
@@ -324,9 +338,9 @@ export class ReplicatorTests extends TestCase {
    */
   async testPullFilter(): Promise<ITestResult> {
     return {
-      testName: 'testPullFilter',
+      testName: "testPullFilter",
       success: false,
-      message: 'Not implemented',
+      message: "Not implemented",
       data: undefined,
     };
   }
@@ -337,9 +351,9 @@ export class ReplicatorTests extends TestCase {
    */
   async testPushAndForget(): Promise<ITestResult> {
     return {
-      testName: 'testPushAndForget',
+      testName: "testPushAndForget",
       success: false,
-      message: 'Not implemented',
+      message: "Not implemented",
       data: undefined,
     };
   }
@@ -350,9 +364,9 @@ export class ReplicatorTests extends TestCase {
    */
   async testPullRemovedDocWithFilterSingleShot(): Promise<ITestResult> {
     return {
-      testName: 'testPullRemovedDocWithFilterSingleShot',
+      testName: "testPullRemovedDocWithFilterSingleShot",
       success: false,
-      message: 'Not implemented',
+      message: "Not implemented",
       data: undefined,
     };
   }
@@ -363,9 +377,9 @@ export class ReplicatorTests extends TestCase {
    */
   async testPullRemovedDocWithFilterContinuous(): Promise<ITestResult> {
     return {
-      testName: 'testPullRemovedDocWithFilterContinuous',
+      testName: "testPullRemovedDocWithFilterContinuous",
       success: false,
-      message: 'Not implemented',
+      message: "Not implemented",
       data: undefined,
     };
   }
@@ -376,9 +390,9 @@ export class ReplicatorTests extends TestCase {
    */
   async testStopAndRestartPushReplicationWithFilter(): Promise<ITestResult> {
     return {
-      testName: 'testStopAndRestartPushReplicationWithFilter',
+      testName: "testStopAndRestartPushReplicationWithFilter",
       success: false,
-      message: 'Not implemented',
+      message: "Not implemented",
       data: undefined,
     };
   }
@@ -389,14 +403,12 @@ export class ReplicatorTests extends TestCase {
    */
   async testStopAndRestartPullReplicationWithFilter(): Promise<ITestResult> {
     return {
-      testName: 'testStopAndRestartPullReplicationWithFilter',
+      testName: "testStopAndRestartPullReplicationWithFilter",
       success: false,
-      message: 'Not implemented',
+      message: "Not implemented",
       data: undefined,
     };
   }
-
-
 
   /**
    *
@@ -404,9 +416,9 @@ export class ReplicatorTests extends TestCase {
    */
   async testRemoveChangeListener(): Promise<ITestResult> {
     return {
-      testName: 'testRemoveChangeListener',
+      testName: "testRemoveChangeListener",
       success: false,
-      message: 'Not implemented',
+      message: "Not implemented",
       data: undefined,
     };
   }
@@ -417,9 +429,9 @@ export class ReplicatorTests extends TestCase {
    */
   async testAddRemoveChangeListenerAfterReplicatorStart(): Promise<ITestResult> {
     return {
-      testName: 'testAddRemoveChangeListenerAfterReplicatorStart',
+      testName: "testAddRemoveChangeListenerAfterReplicatorStart",
       success: false,
-      message: 'Not implemented',
+      message: "Not implemented",
       data: undefined,
     };
   }
@@ -430,9 +442,9 @@ export class ReplicatorTests extends TestCase {
    */
   async testCopyingReplicatorConfiguration(): Promise<ITestResult> {
     return {
-      testName: 'testCopyingReplicatorConfiguration',
+      testName: "testCopyingReplicatorConfiguration",
       success: false,
-      message: 'Not implemented',
+      message: "Not implemented",
       data: undefined,
     };
   }
@@ -443,9 +455,9 @@ export class ReplicatorTests extends TestCase {
    */
   async testReplicationConfigSetterMethods(): Promise<ITestResult> {
     return {
-      testName: 'testReplicationConfigSetterMethods',
+      testName: "testReplicationConfigSetterMethods",
       success: false,
-      message: 'Not implemented',
+      message: "Not implemented",
       data: undefined,
     };
   }

@@ -1,6 +1,6 @@
-import { CouchbaseLiteException } from '../../cblite';
-import { TestCase } from './test-case';
-import { ITestResult } from './test-result.types';
+import { CouchbaseLiteException } from "cblite-js";
+import { TestCase } from "./test-case";
+import { ITestResult } from "./test-result.types";
 
 /**
  * TestingTests - reminder all test cases must start with 'test' in the name of the method or they will not run
@@ -17,9 +17,9 @@ export class TestingTests extends TestCase {
    */
   async testRunnerPass(): Promise<ITestResult> {
     return {
-      testName: 'testRunnerPass',
+      testName: "testRunnerPass",
       success: true,
-      message: 'success',
+      message: "success",
       data: undefined,
     };
   }
@@ -30,11 +30,15 @@ export class TestingTests extends TestCase {
    * @returns {Promise<ITestResult>} A promise that resolves to an ITestResult object which contains the result of the verification.
    */
   async testRunnerFail(): Promise<ITestResult> {
-    let exception = new CouchbaseLiteException('testRunnerFail', 'This is a test exception', 500);
+    let exception = new CouchbaseLiteException(
+      "testRunnerFail",
+      "This is a test exception",
+      500
+    );
     return {
-      testName: 'testRunnerFail',
+      testName: "testRunnerFail",
       success: false,
-      message:  JSON.stringify(exception),
+      message: JSON.stringify(exception),
       data: undefined,
     };
   }
@@ -42,9 +46,9 @@ export class TestingTests extends TestCase {
   async testRunnerThreeSeconds(): Promise<ITestResult> {
     await new Promise((resolve) => setTimeout(resolve, 3000));
     return {
-      testName: 'testRunnerFiveSeconds',
+      testName: "testRunnerFiveSeconds",
       success: true,
-      message: 'success',
+      message: "success",
       data: undefined,
     };
   }
@@ -52,9 +56,9 @@ export class TestingTests extends TestCase {
   async testRunnerFiveSeconds(): Promise<ITestResult> {
     await new Promise((resolve) => setTimeout(resolve, 5000));
     return {
-      testName: 'testRunnerTenSeconds',
+      testName: "testRunnerTenSeconds",
       success: true,
-      message: 'success',
+      message: "success",
       data: undefined,
     };
   }
@@ -62,9 +66,9 @@ export class TestingTests extends TestCase {
   async testRunnerSevenSeconds(): Promise<ITestResult> {
     await new Promise((resolve) => setTimeout(resolve, 7000));
     return {
-      testName: 'testRunnerSevenSeconds',
+      testName: "testRunnerSevenSeconds",
       success: true,
-      message: 'success',
+      message: "success",
       data: undefined,
     };
   }

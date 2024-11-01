@@ -4,7 +4,7 @@ import { ITestResult } from './test-result.types';
 import { expect } from 'chai';
 
 //import the database which has a list of log levels and domains
-import { LogLevel, LogDomain  } from '../../cblite';
+import { LogLevel, LogDomain  } from 'cbl-ionic';
 
 /**
  * ConsoleLoggingTests - reminder all test cases must start with 'test' in the name of the method or they will not run

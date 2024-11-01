@@ -1,5 +1,5 @@
-import { TestCase } from './test-case';
-import { ITestResult } from './test-result.types';
+import { TestCase } from "./test-case";
+import { ITestResult } from "./test-result.types";
 
 /* TODO - implement the FileLogging and re-enable tests */
 
@@ -18,9 +18,9 @@ export class FileLoggingTests extends TestCase {
    */
   async fileLoggingLevels(): Promise<ITestResult> {
     return {
-      testName: 'testFileLoggingLevels',
+      testName: "testFileLoggingLevels",
       success: false,
-      message: 'Not implemented',
+      message: "Not implemented",
       data: undefined,
     };
   }
@@ -32,9 +32,9 @@ export class FileLoggingTests extends TestCase {
    */
   async fileLoggingDefaultBinaryFormat(): Promise<ITestResult> {
     return {
-      testName: 'testFileLoggingDefaultBinaryFormat',
+      testName: "testFileLoggingDefaultBinaryFormat",
       success: false,
-      message: 'Not implemented',
+      message: "Not implemented",
       data: undefined,
     };
   }
@@ -46,9 +46,9 @@ export class FileLoggingTests extends TestCase {
    */
   async fileLoggingUsePlainText(): Promise<ITestResult> {
     return {
-      testName: 'testFileLoggingUsePlainText',
+      testName: "testFileLoggingUsePlainText",
       success: false,
-      message: 'Not implemented',
+      message: "Not implemented",
       data: undefined,
     };
   }
@@ -60,9 +60,9 @@ export class FileLoggingTests extends TestCase {
    */
   async fileLoggingLogFilename(): Promise<ITestResult> {
     return {
-      testName: 'testFileLoggingLogFilename',
+      testName: "testFileLoggingLogFilename",
       success: false,
-      message: 'Not implemented',
+      message: "Not implemented",
       data: undefined,
     };
   }
@@ -74,9 +74,9 @@ export class FileLoggingTests extends TestCase {
    */
   async fileLoggingDisableLogging(): Promise<ITestResult> {
     return {
-      testName: 'testFileLoggingDisableLogging',
+      testName: "testFileLoggingDisableLogging",
       success: false,
-      message: 'Not implemented',
+      message: "Not implemented",
       data: undefined,
     };
   }
@@ -88,9 +88,9 @@ export class FileLoggingTests extends TestCase {
    */
   async fileLoggingReEnableLogging(): Promise<ITestResult> {
     return {
-      testName: 'testFileLoggingReEnableLogging',
+      testName: "testFileLoggingReEnableLogging",
       success: false,
-      message: 'Not implemented',
+      message: "Not implemented",
       data: undefined,
     };
   }
