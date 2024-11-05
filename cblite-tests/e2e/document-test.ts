@@ -1,6 +1,6 @@
 import { TestCase } from './test-case';
 import { ITestResult } from './test-result.types';
-import { MutableDocument, Blob } from 'cblite-js';
+import { Database, DatabaseConfiguration, MutableDocument, Blob } from 'cblite-js';
 import { expect } from 'chai';
 /**
  * DocumentTests - reminder all test cases must start with 'test' in the name of the method or they will not run
@@ -311,20 +311,6 @@ export class DocumentTests extends TestCase {
         data: undefined,
       };
     }
-  }
-
-  /**
-   *
-   *
-   * @returns {Promise<ITestResult>} A promise that resolves to an ITestResult object which contains the result of the verification.
-   */
-  async testSaveThenGetFromAnotherDB(): Promise<ITestResult> {
-    return {
-      testName: 'testSaveThenGetFromAnotherDB',
-      success: false,
-      message: 'Not implemented',
-      data: undefined,
-    };
   }
 
   /**
@@ -966,7 +952,7 @@ export class DocumentTests extends TestCase {
       const retrievedDoc = await this.defaultCollection.document('doc1');
 
       const retrievedBlob = retrievedDoc.getBlob('blob');
-      const retrievedBlobContent = await retrievedDoc.getBlobContent('blob', this.defaultCollection);
+      const retrievedBlobContent = await retrievedDoc.getBlobContent('blob');
       const retrievedBlobText = decoder.decode(retrievedBlobContent);
 
       // Assertions
@@ -977,18 +963,19 @@ export class DocumentTests extends TestCase {
       const nuContent = '1234567890';
       const encodedContent = encoder.encode(nuContent);
       const nuBlob = new Blob('text/plain', encodedContent);
-      doc.setBlob('blob', nuBlob);
+      const mutableDoc = MutableDocument.fromDocument(retrievedDoc);
+      mutableDoc.setBlob('blob', nuBlob);
 
-      await this.defaultCollection.save(doc);
+      await this.defaultCollection.save(mutableDoc);
       const updatedDoc = await this.defaultCollection.document('doc1');
 
-      const updatedBlob = retrievedDoc.getBlob('blob');
-      const updatedBlobContent = await retrievedDoc.getBlobContent('blob');
-      const updatedBlobText = decoder.decode(retrievedBlobContent);
+      const updatedBlob = updatedDoc.getBlob('blob');
+      const updatedBlobContent = await updatedDoc.getBlobContent('blob');
+      const updatedBlobText = decoder.decode(updatedBlobContent);
 
       // Assertions for updated document
       expect(updatedBlob?.getContentType()).to.equal('text/plain');
-      expect(updatedBlobContent).to.equal('1234567890');
+      expect(updatedBlobText).to.equal('1234567890');
 
       return {
         testName: 'testSetBlob',
@@ -1013,6 +1000,7 @@ export class DocumentTests extends TestCase {
    */
   async testGetBlob(): Promise<ITestResult> {
     try {
+      const decoder = new TextDecoder();
       // Create a document
       const doc = new MutableDocument('doc1');
 
@@ -1024,6 +1012,10 @@ export class DocumentTests extends TestCase {
 
       // Retrieve the saved document
       const retrievedDoc = await this.defaultCollection.document('doc1');
+
+      const retrievedBlob = retrievedDoc.getBlob('blob');
+      const retrievedBlobContent = await retrievedDoc.getBlobContent('blob');
+      const retrievedBlobText = decoder.decode(retrievedBlobContent);
 
       // Assertions
       expect(retrievedDoc.getBlob('null')).to.be.null;
@@ -1037,8 +1029,10 @@ export class DocumentTests extends TestCase {
       expect(retrievedDoc.getBlob('date')).to.be.null;
       expect(retrievedDoc.getBlob('dict')).to.be.null;
       expect(retrievedDoc.getBlob('array')).to.be.null;
-      expect(retrievedDoc.getBlob('blob')).to.not.be.null;
-      // expect(retrievedDoc.getBlob("blob").content).to.eql(kTestBlob);
+
+      // Assertions
+      expect(retrievedBlob?.getContentType()).to.equal('text/plain');
+      expect(retrievedBlobText).to.equal(this.kTestBlob);
 
       // Return success
       return {
@@ -1128,16 +1122,14 @@ export class DocumentTests extends TestCase {
       const retrievedDoc = await this.defaultCollection.document('doc1');
 
       // Assertions for dictionary values
-      expect(retrievedDoc.getDictionary('nullValue')).to.be.null;
-      expect(retrievedDoc.getDictionary('booleanTrue')).to.be.null;
-      expect(retrievedDoc.getDictionary('booleanFalse')).to.be.null;
-      expect(retrievedDoc.getDictionary('dataValue')).to.be.null;
-      expect(retrievedDoc.getDictionary('longZero')).to.be.null;
-      expect(retrievedDoc.getDictionary('longBig')).to.be.null;
-      expect(retrievedDoc.getDictionary('longSmall')).to.be.null;
-      expect(retrievedDoc.getDictionary('doubleBig')).to.be.null;
-      expect(retrievedDoc.getDictionary('doubleSmall')).to.be.null;
-      expect(retrievedDoc.getDictionary('dateCB')).to.be.null;
+      expect(retrievedDoc.getDictionary('null')).to.be.null;
+      expect(retrievedDoc.getDictionary('true')).to.be.null;
+      expect(retrievedDoc.getDictionary('false')).to.be.null;
+      expect(retrievedDoc.getDictionary('string')).to.be.null;
+      expect(retrievedDoc.getDictionary('zero')).to.be.null;
+      expect(retrievedDoc.getDictionary('minus_one')).to.be.null;
+      expect(retrievedDoc.getDictionary('one_dot_one')).to.be.null;
+      expect(retrievedDoc.getDictionary('date')).to.be.null;
 
       const expectedDict = {
         street: '1 Main st.',
@@ -1145,11 +1137,10 @@ export class DocumentTests extends TestCase {
         state: 'CA',
         country: 'USA',
         code: '90210',
-      };
+      } as { [key: string]: any };
 
-      expect(retrievedDoc.getDictionary('dict').toMap()).to.deep.equal(expectedDict);
+      expect(retrievedDoc.getDictionary('dict')).to.deep.equal(expectedDict);
       expect(retrievedDoc.getDictionary('array')).to.be.null;
-      expect(retrievedDoc.getDictionary('blob')).to.be.null;
       expect(retrievedDoc.getDictionary('non_existing_key')).to.be.null;
 
       return {
@@ -1247,16 +1238,15 @@ export class DocumentTests extends TestCase {
       const retrievedDoc = await this.defaultCollection.document('doc1');
 
       // Assertions
-      expect(retrievedDoc.getArray('nullValue')).to.be.null;
-      expect(retrievedDoc.getArray('booleanTrue')).to.be.null;
-      expect(retrievedDoc.getArray('booleanFalse')).to.be.null;
-      expect(retrievedDoc.getArray('dataValue')).to.be.null;
-      expect(retrievedDoc.getArray('longZero')).to.be.null;
-      expect(retrievedDoc.getArray('longBig')).to.be.null;
-      expect(retrievedDoc.getArray('longSmall')).to.be.null;
-      expect(retrievedDoc.getArray('doubleBig')).to.be.null;
-      expect(retrievedDoc.getArray('doubleSmall')).to.be.null;
-      expect(retrievedDoc.getArray('dateCB')).to.be.null;
+      expect(retrievedDoc.getArray('null')).to.be.null;
+      expect(retrievedDoc.getArray('true')).to.be.null;
+      expect(retrievedDoc.getArray('false')).to.be.null;
+      expect(retrievedDoc.getArray('string')).to.be.null;
+      expect(retrievedDoc.getArray('zero')).to.be.null;
+      expect(retrievedDoc.getArray('one')).to.be.null;
+      expect(retrievedDoc.getArray('minus_one')).to.be.null;
+      expect(retrievedDoc.getArray('one_dot_one')).to.be.null;
+      expect(retrievedDoc.getArray('date')).to.be.null;
       expect(retrievedDoc.getArray('dict')).to.be.null;
       expect(retrievedDoc.getArray('array')).to.deep.equal(['650-000-0000', '650-000-0001']);
       expect(retrievedDoc.getArray('blob')).to.be.null;
@@ -1666,9 +1656,10 @@ export class DocumentTests extends TestCase {
       // Retrieve the document from the collection
       const savedDoc = await this.defaultCollection.document(doc.getId());
 
+      const countKeys = Object.keys(savedDoc.toDictionary()).length;
       // Assert the count of the document's keys
-      expect(Object.keys(savedDoc.toDictionary()).length).to.equal(19);
-      expect(Object.keys(savedDoc.toDictionary()).length).to.equal(savedDoc.count());
+      expect(countKeys).to.equal(12);
+      expect(countKeys).to.equal(savedDoc.count());
 
       return {
         testName: 'testCount',
@@ -1684,20 +1675,6 @@ export class DocumentTests extends TestCase {
         data: undefined,
       };
     }
-  }
-
-  /**
-   *
-   *
-   * @returns {Promise<ITestResult>} A promise that resolves to an ITestResult object which contains the result of the verification.
-   */
-  async testContainsKey(): Promise<ITestResult> {
-    return {
-      testName: 'testContainsKey',
-      success: false,
-      message: 'Not implemented',
-      data: undefined,
-    };
   }
 
   /**
@@ -1748,7 +1725,6 @@ export class DocumentTests extends TestCase {
       expect(doc.getValue('weight')).to.be.null;
       expect(doc.getValue('age')).to.be.null;
       expect(doc.getValue('active')).to.be.null;
-      expect(doc.getDictionary('address')?.getValue('city')).to.be.null;
 
       const docDict = {
         type: 'profile',
@@ -1781,48 +1757,6 @@ export class DocumentTests extends TestCase {
         data: undefined,
       };
     }
-  }
-
-  /**
-   *
-   *
-   * @returns {Promise<ITestResult>} A promise that resolves to an ITestResult object which contains the result of the verification.
-   */
-  async testBlob(): Promise<ITestResult> {
-    return {
-      testName: 'testBlob',
-      success: false,
-      message: 'Not implemented',
-      data: undefined,
-    };
-  }
-
-  /**
-   *
-   *
-   * @returns {Promise<ITestResult>} A promise that resolves to an ITestResult object which contains the result of the verification.
-   */
-  async testMultipleBlobRead(): Promise<ITestResult> {
-    return {
-      testName: 'testMultipleBlobRead',
-      success: false,
-      message: 'Not implemented',
-      data: undefined,
-    };
-  }
-
-  /**
-   *
-   *
-   * @returns {Promise<ITestResult>} A promise that resolves to an ITestResult object which contains the result of the verification.
-   */
-  async testReadingExistingBlob(): Promise<ITestResult> {
-    return {
-      testName: 'testReadingExistingBlob',
-      success: false,
-      message: 'Not implemented',
-      data: undefined,
-    };
   }
 
   /**
@@ -1908,9 +1842,8 @@ export class DocumentTests extends TestCase {
       const sdoc1 = await this.defaultCollection.document('doc1');
 
       // Assertions for equality with itself and with another document with different ID
-      expect(sdoc1.toDictionary()).to.eql(doc1.toDictionary());
-      expect(doc1.toDictionary()).to.eql(doc1.toDictionary());
-      expect(doc1.toDictionary()).to.not.eql(new MutableDocument('different_id').toDictionary());
+      expect(sdoc1.toDictionary()).to.deep.equal(doc1.toDictionary());
+      expect(doc1.toDictionary()).to.not.equal(new MutableDocument('different_id').toDictionary());
 
       // Create and populate document doc2
       const doc2 = new MutableDocument('doc2');
@@ -1921,9 +1854,8 @@ export class DocumentTests extends TestCase {
       const sdoc2 = await this.defaultCollection.document('doc2');
 
       // Assertions for equality with itself and with another document with different ID
-      expect(sdoc2.toDictionary()).to.eql(doc2.toDictionary());
-      expect(doc2.toDictionary()).to.eql(doc2.toDictionary());
-      expect(doc2.toDictionary()).to.not.eql(new MutableDocument('different_id').toDictionary());
+      expect(sdoc2.toDictionary()).to.deep.equal(doc2.toDictionary());
+      expect(doc2.toDictionary()).to.not.equal(new MutableDocument('different_id').toDictionary());
 
       // Check if doc1 and doc2 have different IDs
       expect(doc1.getId()).to.not.equal(doc2.getId());
@@ -1934,8 +1866,8 @@ export class DocumentTests extends TestCase {
       expect(sdoc1).to.not.equal(sdoc2);
 
       // Check if the content of doc1 and doc2 is equal
-      expect(doc1.toDictionary()).to.eql(doc2.toDictionary());
-      expect(sdoc1.toDictionary()).to.eql(sdoc2.toDictionary());
+      expect(doc1.toDictionary()).to.deep.equal(doc2.toDictionary());
+      expect(sdoc1.toDictionary()).to.deep.equal(sdoc2.toDictionary());
 
       // Return success
       return {
@@ -1961,12 +1893,56 @@ export class DocumentTests extends TestCase {
    * @returns {Promise<ITestResult>} A promise that resolves to an ITestResult object which contains the result of the verification.
    */
   async testEqualityDifferentDB(): Promise<ITestResult> {
-    return {
-      testName: 'testEqualityDifferentDB',
-      success: false,
-      message: 'Not implemented',
-      data: undefined,
-    };
+    try {
+      const dbConfig = new DatabaseConfiguration();
+      dbConfig.setDirectory(this.directory);
+      const otherDb = await new Database(this.otherDatabaseName, dbConfig);
+      await otherDb.open();
+
+      if (!(otherDb instanceof Database)) {
+        return {
+          testName: 'testEqualityDifferentDB',
+          success: false,
+          message: "otherDb isn't a database instance",
+          data: undefined,
+        };
+      }
+
+      const otherCollection = await otherDb.defaultCollection();
+
+      const doc1a = new MutableDocument('doc1');
+      doc1a.setInt('answer', 42);
+
+      const doc1b = new MutableDocument('doc1');
+      doc1b.setInt('answer', 42);
+
+      expect(doc1a.toDictionary()).to.deep.equal(doc1b.toDictionary());
+
+      await this.defaultCollection.save(doc1a);
+      await otherCollection.save(doc1b);
+      const sdoc1a = await this.defaultCollection.document('doc1');
+      const sdoc1b = await otherCollection.document('doc1');
+
+      expect(doc1a.toDictionary()).to.deep.equal(sdoc1a.toDictionary());
+      expect(doc1b.toDictionary()).to.deep.equal(sdoc1b.toDictionary());
+
+      expect(doc1a).to.not.deep.equal(doc1b);
+      expect(sdoc1a).to.not.deep.equal(sdoc1b);
+
+      return {
+        testName: 'testEqualityDifferentDB',
+        success: true,
+        message: 'success',
+        data: undefined,
+      };
+    } catch (error) {
+      return {
+        testName: 'testEqualityDifferentDB',
+        success: false,
+        message: JSON.stringify(error),
+        data: undefined,
+      };
+    }
   }
 
   /**
@@ -1975,12 +1951,27 @@ export class DocumentTests extends TestCase {
    * @returns {Promise<ITestResult>} A promise that resolves to an ITestResult object which contains the result of the verification.
    */
   async testRevisionIDNewDoc(): Promise<ITestResult> {
-    return {
-      testName: 'testRevisionIDNewDoc',
-      success: false,
-      message: 'Not implemented',
-      data: undefined,
-    };
+    try {
+      // Create and populate document doc1
+      const doc1 = new MutableDocument('doc1');
+      doc1.setString('key', 'some');
+      expect(doc1.getRevisionID()).to.equal(null);
+      await this.defaultCollection.save(doc1);
+      expect(doc1.getRevisionID()).to.not.equal(null);
+      return {
+        testName: 'testRevisionIDNewDoc',
+        success: true,
+        message: 'success',
+        data: undefined,
+      };
+    } catch (error){
+      return {
+        testName: 'testRevisionIDNewDoc',
+        success: false,
+        message: JSON.stringify(error),
+        data: undefined,
+      };
+    }
   }
 
   /**

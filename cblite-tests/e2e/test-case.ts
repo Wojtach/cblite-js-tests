@@ -34,7 +34,8 @@ export class TestCase {
     try {
       //try to get the platform local directory - can't run tests if we can't save a database to a directory
       this.databaseName = `db${uuid().toString()}`;
-      //this.databaseName = `db${uuid().toString().replace(/-/g, '')}`;
+      this.otherDatabaseName = `other${uuid().toString()}`;
+
       const filePathResult = await this.getPlatformPath();
       if (filePathResult.success) {
         this.directory = filePathResult.data;
