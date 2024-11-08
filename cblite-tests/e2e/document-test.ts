@@ -319,12 +319,34 @@ export class DocumentTests extends TestCase {
    * @returns {Promise<ITestResult>} A promise that resolves to an ITestResult object which contains the result of the verification.
    */
   async testNoCacheNoLive(): Promise<ITestResult> {
-    return {
-      testName: 'testNoCacheNoLive',
-      success: false,
-      message: 'Not implemented',
-      data: undefined,
-    };
+    try {
+      const doc1a = new MutableDocument('doc1');
+      doc1a.setValue('name', 'Scott Tiger');
+      await this.defaultCollection.save(doc1a);
+
+      const doc1b = await this.defaultCollection.document('doc1');
+      const doc1c = await this.defaultCollection.document('doc1');
+
+      expect(doc1a).to.not.equal(doc1b);
+      expect(doc1a).to.not.equal(doc1c);
+      expect(doc1b).to.not.equal(doc1c);
+      expect(doc1a.toDictionary()).to.deep.equal(doc1b.toDictionary());
+      expect(doc1a.toDictionary()).to.deep.equal(doc1c.toDictionary());
+      expect(doc1b.toDictionary()).to.deep.equal(doc1c.toDictionary());
+      return {
+        testName: 'testNoCacheNoLive',
+        success: true,
+        message: 'success',
+        data: undefined,
+      };
+    } catch (error) {
+      return {
+        testName: 'testNoCacheNoLive',
+        success: false,
+        message: JSON.stringify(error),
+        data: undefined,
+      };
+    }
   }
 
   /**
@@ -952,8 +974,7 @@ export class DocumentTests extends TestCase {
       const retrievedDoc = await this.defaultCollection.document('doc1');
 
       const retrievedBlob = retrievedDoc.getBlob('blob');
-      const retrievedBlobContent = await retrievedDoc.getBlobContent('blob');
-      const retrievedBlobText = decoder.decode(retrievedBlobContent);
+      const retrievedBlobText = decoder.decode(retrievedBlob.getBytes());
 
       // Assertions
       expect(retrievedBlob?.getContentType()).to.equal('text/plain');
@@ -1014,8 +1035,8 @@ export class DocumentTests extends TestCase {
       const retrievedDoc = await this.defaultCollection.document('doc1');
 
       const retrievedBlob = retrievedDoc.getBlob('blob');
-      const retrievedBlobContent = await retrievedDoc.getBlobContent('blob');
-      const retrievedBlobText = decoder.decode(retrievedBlobContent);
+      const blobBytes = retrievedBlob.getBytes();
+      const retrievedBlobText = decoder.decode(blobBytes);
 
       // Assertions
       expect(retrievedDoc.getBlob('null')).to.be.null;
@@ -1045,6 +1066,49 @@ export class DocumentTests extends TestCase {
       // Return failure with error message
       return {
         testName: 'testGetBlob',
+        success: false,
+        message: JSON.stringify(error),
+        data: undefined,
+      };
+    }
+  }
+
+  /**
+   *
+   *
+   * @returns {Promise<ITestResult>} A promise that resolves to an ITestResult object which contains the result of the verification.
+   */
+  async testBlobToDictionary(): Promise<ITestResult> {
+    try {
+      // Create a document
+      const doc = new MutableDocument('doc1');
+
+      // Populate the document
+      this.populateData(doc);
+
+      // Save the document
+      await this.defaultCollection.save(doc);
+
+      // Retrieve the saved document
+      const retrievedDoc = await this.defaultCollection.document('doc1');
+
+      const retrievedBlob = retrievedDoc.getBlob('blob');
+      const blobBytes = Array.from(retrievedBlob.getBytes());
+      const contentType = retrievedBlob.getContentType();
+      const dic = retrievedBlob.toDictionary();
+
+      expect(dic.contentType).to.deep.equal(contentType);
+      expect(dic.data).to.deep.equal(blobBytes);
+
+      return {
+        testName: 'testBlobToDictionary',
+        success: true,
+        message: 'success',
+        data: undefined,
+      };
+    } catch (error) {
+      return {
+        testName: 'testBlobToDictionary',
         success: false,
         message: JSON.stringify(error),
         data: undefined,
@@ -1964,7 +2028,7 @@ export class DocumentTests extends TestCase {
         message: 'success',
         data: undefined,
       };
-    } catch (error){
+    } catch (error) {
       return {
         testName: 'testRevisionIDNewDoc',
         success: false,
@@ -1980,26 +2044,38 @@ export class DocumentTests extends TestCase {
    * @returns {Promise<ITestResult>} A promise that resolves to an ITestResult object which contains the result of the verification.
    */
   async testRevisionIDExistingDoc(): Promise<ITestResult> {
-    return {
-      testName: 'testRevisionIDExistingDoc',
-      success: false,
-      message: 'Not implemented',
-      data: undefined,
-    };
-  }
-
-  /**
-   *
-   *
-   * @returns {Promise<ITestResult>} A promise that resolves to an ITestResult object which contains the result of the verification.
-   */
-  async testJSONNumber(): Promise<ITestResult> {
-    return {
-      testName: 'testJSONNumber',
-      success: false,
-      message: 'Not implemented',
-      data: undefined,
-    };
+    try {
+      // Create and populate document doc1
+      const doc1 = new MutableDocument('doc');
+      doc1.setString('key', 'some');
+      await this.defaultCollection.save(doc1);
+      const revId = doc1.getRevisionID();
+      // doc from database should always have a revision-id
+      const mdoc = MutableDocument.fromDocument(doc1);
+      expect(mdoc.getRevisionID()).to.deep.equal(doc1.getRevisionID());
+      // modifying the doc and saving will update the revision-id.
+      // also this will not affect the previous document revision-id
+      mdoc.setString('key', 'modified');
+      await this.defaultCollection.save(mdoc);
+      expect(mdoc.getRevisionID()).to.not.equal(null);
+      expect(doc1.getRevisionID()).to.not.equal(null);
+      // the revision-id should be updated
+      expect(mdoc.getRevisionID()).to.not.deep.equal(doc1.getRevisionID());
+      expect(revId).to.deep.equal(doc1.getRevisionID());
+      return {
+        testName: 'testRevisionIDExistingDoc',
+        success: true,
+        message: 'success',
+        data: undefined,
+      };
+    } catch (error) {
+      return {
+        testName: 'testRevisionIDExistingDoc',
+        success: false,
+        message: JSON.stringify(error),
+        data: undefined,
+      };
+    }
   }
 
   /**
@@ -2008,26 +2084,40 @@ export class DocumentTests extends TestCase {
    * @returns {Promise<ITestResult>} A promise that resolves to an ITestResult object which contains the result of the verification.
    */
   async testDocumentToJSON(): Promise<ITestResult> {
-    return {
-      testName: 'testDocumentToJSON',
-      success: false,
-      message: 'Not implemented',
-      data: undefined,
-    };
-  }
-
-  /**
-   *
-   *
-   * @returns {Promise<ITestResult>} A promise that resolves to an ITestResult object which contains the result of the verification.
-   */
-  async testUnsavedMutableDocumentToJSON(): Promise<ITestResult> {
-    return {
-      testName: 'testUnsavedMutableDocumentToJSON',
-      success: false,
-      message: 'Not implemented',
-      data: undefined,
-    };
+    try {
+      const json = this.getRickAndMortyJson();
+      const mDoc = MutableDocument.fromJSON('doc1', json);
+      await this.defaultCollection.save(mDoc);
+      let doc = await this.defaultCollection.document('doc1');
+      let dic = doc.toDictionary();
+      expect(dic['name']).to.deep.equal('Rick Sanchez');
+      expect(dic['id']).to.deep.equal(1);
+      expect(dic['isAlive']).to.deep.equal(true);
+      expect(dic['longitude']).to.deep.equal(-21.152958);
+      expect(dic['family'][0]['name']).to.deep.equal('Morty Smith');
+      expect(dic['family'][3]['name']).to.deep.equal('Summer Smith');
+      expect(Object.keys(dic).length).to.equal(11);
+      const mutDoc = MutableDocument.fromDocument(doc);
+      mutDoc.setString('newKeyAppended', 'newValueAppended');
+      await this.defaultCollection.save(mutDoc);
+      doc = await this.defaultCollection.document('doc1');
+      dic = doc.toDictionary();
+      expect(dic['newKeyAppended']).to.deep.equal('newValueAppended');
+      expect(Object.keys(dic).length).to.equal(12);
+      return {
+        testName: 'testDocumentToJSON',
+        success: true,
+        message: 'success',
+        data: undefined,
+      };
+    } catch (error) {
+      return {
+        testName: 'testDocumentToJSON',
+        success: false,
+        message: JSON.stringify(error),
+        data: undefined,
+      };
+    }
   }
 
   /**
@@ -2036,80 +2126,31 @@ export class DocumentTests extends TestCase {
    * @returns {Promise<ITestResult>} A promise that resolves to an ITestResult object which contains the result of the verification.
    */
   async testSpecialJSONStrings(): Promise<ITestResult> {
+    const json = ['Random:String', '', ' ', '[', '{', '{"dictionary_without_value"}', '[]'];
+    //validate json parsing on bad strings throws error
+    let errorCount = 0;
+    for (const str of json) {
+      try {
+        const mDoc = MutableDocument.fromJSON('doc1', str);
+      } catch (error) {
+        errorCount++;
+      }
+    }
+
+    try {
+      expect(errorCount).to.equal(json.length - 1);
+    } catch (error) {
+      return {
+        testName: 'testSpecialJSONStrings',
+        success: false,
+        message: JSON.stringify(error),
+        data: undefined,
+      };
+    }
     return {
       testName: 'testSpecialJSONStrings',
-      success: false,
-      message: 'Not implemented',
-      data: undefined,
-    };
-  }
-
-  /**
-   *
-   *
-   * @returns {Promise<ITestResult>} A promise that resolves to an ITestResult object which contains the result of the verification.
-   */
-  async testBlobToJSON(): Promise<ITestResult> {
-    return {
-      testName: 'testBlobToJSON',
-      success: false,
-      message: 'Not implemented',
-      data: undefined,
-    };
-  }
-
-  /**
-   *
-   *
-   * @returns {Promise<ITestResult>} A promise that resolves to an ITestResult object which contains the result of the verification.
-   */
-  async testGetBlobFromProps(): Promise<ITestResult> {
-    return {
-      testName: 'testGetBlobFromProps',
-      success: false,
-      message: 'Not implemented',
-      data: undefined,
-    };
-  }
-
-  /**
-   *
-   *
-   * @returns {Promise<ITestResult>} A promise that resolves to an ITestResult object which contains the result of the verification.
-   */
-  async testUnsavedBlob(): Promise<ITestResult> {
-    return {
-      testName: 'testUnsavedBlob',
-      success: false,
-      message: 'Not implemented',
-      data: undefined,
-    };
-  }
-
-  /**
-   *
-   *
-   * @returns {Promise<ITestResult>} A promise that resolves to an ITestResult object which contains the result of the verification.
-   */
-  async testGetBlobWithInvalidProps(): Promise<ITestResult> {
-    return {
-      testName: 'testGetBlobWithInvalidProps',
-      success: false,
-      message: 'Not implemented',
-      data: undefined,
-    };
-  }
-
-  /**
-   *
-   *
-   * @returns {Promise<ITestResult>} A promise that resolves to an ITestResult object which contains the result of the verification.
-   */
-  async testSaveBlobAndCompactDB(): Promise<ITestResult> {
-    return {
-      testName: 'testSaveBlobAndCompactDB',
-      success: false,
-      message: 'Not implemented',
+      success: true,
+      message: 'success',
       data: undefined,
     };
   }

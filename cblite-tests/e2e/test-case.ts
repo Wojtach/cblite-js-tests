@@ -433,6 +433,10 @@ export class TestCase {
     return 0;
   }
 
+  getRickAndMortyJson(): string {
+    return '{"id":1,"name":"Rick Sanchez","isAlive":true,"species":"Human","picture":"http://placehold.it/32x32","gender":"Male","registered":"2017-11-04T05:37:03.250Z","latitude":40.941286,"longitude":-21.152958,"aka":["Rick C-137","Grandpa Rick","Albert Ein-douche","Rick the Alien","Pickle Rick","Tiny Rick"],"family":[{"id":2,"name":"Morty Smith","relation":"Grandson"},{"id":3,"name":"Beth Smith","relation":"Daughter"},{"id":4,"name":"Jerry Smith","relation":"Son-in-Law"},{"id":5,"name":"Summer Smith","relation":"Grand-daughter"}]}';
+  }
+
   sleep(ms: number) {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
