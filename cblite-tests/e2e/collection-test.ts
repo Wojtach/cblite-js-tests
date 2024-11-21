@@ -831,7 +831,7 @@ export class CollectionTests extends TestCase {
             assert.equal(4, updatedDoc?.getSequence());
             assert.equal('Steve', updatedDoc?.getString('firstName'));
             assert.equal('Jobs', updatedDoc?.getString('lastName'));
-            assert.equal(56, updatedDoc?.getString('age'));
+            assert.equal(56, updatedDoc?.getInt('age'));
 
             return {
                 testName: 'testColCreateAndUpdateMutableDoc',

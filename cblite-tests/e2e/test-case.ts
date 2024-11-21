@@ -6,13 +6,15 @@ import {
   MutableDocument,
   DatabaseConfiguration,
   Dictionary,
+  ICoreEngine,
+  EngineLocator,
 } from "cblite-js";
 import { assert } from "chai";
-import { v4 as uuid } from "uuid";
 import { ITestResult } from "./test-result.types";
 import * as namesData from "./names_100.json";
 
 export class TestCase {
+  private _engine: ICoreEngine = EngineLocator.getEngine(EngineLocator.key);
   //setup shared properties
   database: Database | undefined = undefined;
   otherDatabase: Database | undefined = undefined;
@@ -33,8 +35,16 @@ export class TestCase {
   async init(): Promise<ITestResult> {
     try {
       //try to get the platform local directory - can't run tests if we can't save a database to a directory
-      this.databaseName = `db${uuid().toString()}`;
-      this.otherDatabaseName = `other${uuid().toString()}`;
+      if (this._engine === undefined) {
+        return {
+          testName: "init",
+          success: false,
+          message: "Engine not found",
+          data: undefined,
+        };
+      }
+      this.databaseName = `db${this._engine.getUUID()}`;
+      this.otherDatabaseName = `other${this._engine.getUUID()}`;
 
       const filePathResult = await this.getPlatformPath();
       if (filePathResult.success) {
@@ -219,15 +229,15 @@ export class TestCase {
     methodName: string,
     number: number
   ): Promise<MutableDocument[]> {
-    const docs = this.createDocumentNumbered(1, number);
     try {
+      const docs = this.createDocumentNumbered(1, number);
       for (const doc of docs) {
-        await this.database?.save(doc);
+        await this.defaultCollection?.save(doc);
       }
+      return docs;
     } catch (error) {
       throw new Error(`Can't create docs: ${JSON.stringify(error)}`);
     }
-    return docs;
   }
 
   async createCollectionDocs(
