@@ -232,6 +232,7 @@ export class TestCase {
     try {
       const docs = this.createDocumentNumbered(1, number);
       for (const doc of docs) {
+        console.log(`Saving doc: ${doc.getId()} into default collection`);
         await this.defaultCollection?.save(doc);
       }
       return docs;
@@ -248,9 +249,13 @@ export class TestCase {
     const docs = this.createDocumentNumbered(1, number);
     try {
       for (const doc of docs) {
+        console.log(`Saving doc: ${doc.getId()} into collection ${withCollection.name}`);
         await withCollection.save(doc);
       }
     } catch (error) {
+      console.log(`Can't create collection docs in collection ${
+          withCollection.name
+        }: ${JSON.stringify(error)}`);
       throw new Error(
         `Can't create collection docs in collection ${
           withCollection.name
