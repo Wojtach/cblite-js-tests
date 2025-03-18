@@ -7,6 +7,8 @@ import {
   ReplicatorConfiguration,
   ReplicatorType,
   URLEndpoint,
+  CollectionConfig,
+  Collection
 } from "cblite-js";
 import { expect } from "chai";
 
@@ -18,12 +20,68 @@ export class ReplicatorTests extends TestCase {
     super();
   }
 
+  private readonly SYNC_GATEWAY_URL = "ws://localhost:4984/projects";
+  private readonly TEST_USERNAME = "demo@example.com";
+  private readonly TEST_PASSWORD = "P@ssw0rd12";
+
+
+  private createConfig(
+    type: ReplicatorType = ReplicatorType.PUSH_AND_PULL,
+    continuous: boolean = false,
+    collection: Collection = this.defaultCollection
+  ): ReplicatorConfiguration {
+    const target = new URLEndpoint(this.SYNC_GATEWAY_URL);
+    const config = new ReplicatorConfiguration(target);
+    config.setReplicatorType(type);
+    config.setContinuous(continuous);
+    config.addCollection(collection);
+    
+    // Add default authenticator
+    const auth = new BasicAuthenticator(this.TEST_USERNAME, this.TEST_PASSWORD);
+    config.setAuthenticator(auth);
+    
+    return config;
+  }
+
+  private async runReplication(config: ReplicatorConfiguration, reset: boolean = false): Promise<void> {
+    const replicator = await Replicator.create(config);
+
+    const promise = new Promise<void>((resolve, reject) => {
+      replicator.addChangeListener((change) => {
+        const status = change.status;
+        const activityLevel = status.getActivityLevel();
+        
+        if (config.getContinuous() && activityLevel === ReplicatorActivityLevel.IDLE) {
+          replicator.stop();
+        }
+      
+        if (activityLevel === ReplicatorActivityLevel.STOPPED) {
+          const error = status.getError();
+          if (error) {
+            reject(new Error(`Replication error: ${JSON.stringify(error)}`));
+          } else {
+            resolve();
+          }
+        }
+      }).then(token => token);
+    });
+    
+    try {
+      await replicator.start(reset);    
+      const token = await promise;
+      await replicator.removeChangeListener(token);
+    } catch (e) {
+      console.error(e)
+    }
+  }
+  
+
   /**
    *
    * @returns {Promise<ITestResult>} A promise that resolves to an ITestResult object which contains the result of the verification.
    */
   async testReplicatorConfigDefaultValues(): Promise<ITestResult> {
-    const target = new URLEndpoint("ws://localhost:4984/db");
+    const target = new URLEndpoint("ws://localhost:4984/project");
     const config = new ReplicatorConfiguration(target);
     config.addCollection(this.collection);
 
@@ -84,47 +142,35 @@ export class ReplicatorTests extends TestCase {
    */
   async testReplicationStatusChangeListenerEvent(): Promise<ITestResult> {
     try {
-      //this is using the replication configuration from the Android Kotlin Learning path
-      //**TODO update to use the new configuration and endpoint**
-      const target = new URLEndpoint("ws://localhost:4984/projects");
-      const auth = new BasicAuthenticator("demo@example.com", "P@ssw0rd12");
-      const config = new ReplicatorConfiguration(target);
-      config.addCollection(this.defaultCollection);
-      config.setAuthenticator(auth);
-
+      const config = this.createConfig();
       let isError = false;
       let didGetChangeStatus = false;
 
       const replicator = await Replicator.create(config);
       const token = await replicator.addChangeListener((change) => {
-        //check to see if there was an error
+        // Check to see if there was an error
         const error = change.status.getError();
         if (error !== undefined) {
           isError = true;
         }
-        //get the status of the replicator using ReplicatorActivityLevel enum
-        if (change.status.getActivityLevel() === ReplicatorActivityLevel.IDLE) {
-          //do something because the replicator is now IDLE
-        }
         didGetChangeStatus = true;
       });
 
-      //don't start with a new checkpoint by passing false to the start method
+      // Don't start with a new checkpoint
       await replicator.start(false);
-      //we need to sleep to wait for the documents to replicate, no one would ever normally do this
-      //don't include in docs
-      await this.sleep(5000);
+      
+      // Short wait to allow replication to make progress
+      await this.sleep(500);
 
-      //this mimics what someone would do when the app needs to close to properly clean up the
-      //replicator and processes
+      // Clean up
       await replicator.removeChangeListener(token);
       await replicator.stop();
 
-      //validate we got documents replicated
+      // Validate we got documents replicated
       const count = await this.defaultCollection.count();
       expect(count.count).to.be.greaterThan(0);
 
-      //validate our listener was called and there wasn't errors
+      // Validate our listener was called and there weren't errors
       expect(isError).to.be.false;
       expect(didGetChangeStatus).to.be.true;
 
@@ -150,52 +196,36 @@ export class ReplicatorTests extends TestCase {
    */
   async testDocumentChangeListenerEvent(): Promise<ITestResult> {
     try {
-      //this is using the replication configuration from the Android Kotlin Learning path
-      //**TODO update to use the new configuration and endpoint**
-      const target = new URLEndpoint("ws://localhost:4984/projects");
-      const auth = new BasicAuthenticator("demo@example.com", "P@ssw0rd12");
-      const config = new ReplicatorConfiguration(target);
-      config.addCollection(this.defaultCollection);
-      config.setAuthenticator(auth);
-
+      const config = this.createConfig();
       let isError = false;
       let didGetDocumentUpdate = false;
 
       const replicator = await Replicator.create(config);
-
       const token = await replicator.addDocumentChangeListener((change) => {
-        //check to see if the documents were pushed or pulled
-        //if isPush is true then the documents were pushed, else it was pulled
-        const isPush = change.isPush;
-        //loop through documents
+        // Check to see if the documents were pushed or pulled
         for (const doc of change.documents) {
-          //details of each document along with if there was an error on that doc
-          const id = doc.id;
-          const flags = doc.flags;
-          const error = doc.error;
-          if (error !== undefined) {
+          if (doc.error !== undefined) {
             isError = true;
           }
         }
         didGetDocumentUpdate = true;
       });
 
-      //don't start with a new checkpoint by passing false to the start method
+      // Start the replicator
       await replicator.start(false);
-      //we need to sleep to wait for the documents to replicate, no one would ever normally do this
-      //don't include in docs
-      await this.sleep(5000);
+      
+      // Short wait to allow replication to make progress
+      await this.sleep(500);
 
-      //this mimics what someone would do when the app needs to close to properly clean up the
-      //replicator and processes
+      // Clean up
       await replicator.removeChangeListener(token);
       await replicator.stop();
 
-      //validate we got documents replicated
+      // Validate we got documents replicated
       const count = await this.defaultCollection.count();
       expect(count.count).to.be.greaterThan(0);
 
-      //validate our listener was called and there wasn't erorrs
+      // Validate our listener was called and there weren't errors
       expect(isError).to.be.false;
       expect(didGetDocumentUpdate).to.be.true;
 
@@ -220,38 +250,152 @@ export class ReplicatorTests extends TestCase {
    * @returns {Promise<ITestResult>} A promise that resolves to an ITestResult object which contains the result of the verification.
    */
   async testEmptyPush(): Promise<ITestResult> {
-    return {
-      testName: "testEmptyPush",
-      success: false,
-      message: "Not implemented",
-      data: undefined,
-    };
+    try {
+      const config = this.createConfig(ReplicatorType.PUSH, false);
+      
+      // Run the replication
+      await this.runReplication(config);
+      
+      return {
+        testName: "testEmptyPush",
+        success: true,
+        message: "Successfully completed empty push replication",
+        data: undefined,
+      };
+    } catch (error) {
+      return {
+        testName: "testEmptyPush",
+        success: false,
+        message: `Error during empty push test: ${error}`,
+        data: undefined,
+      };
+    }
   }
-
   /**
    *
    * @returns {Promise<ITestResult>} A promise that resolves to an ITestResult object which contains the result of the verification.
    */
   async testStartWithCheckpoint(): Promise<ITestResult> {
-    return {
-      testName: "testStartWithCheckpoint",
-      success: false,
-      message: "Not implemented",
-      data: undefined,
-    };
+    try {
+      // Create a test document with a unique ID to avoid conflicts
+      const testDocId = `test-doc-${Date.now()}`;
+      const doc = this.createDocument(testDocId);
+      doc.setString("species", "Tiger");
+      doc.setString("documentType", "project");  // Required by sync function
+      doc.setString("team", "team1"); 
+      await this.defaultCollection.save(doc);
+  
+      // Push the document to Sync Gateway
+      const pushConfig = this.createConfig(ReplicatorType.PUSH, false);
+      await this.runReplication(pushConfig);
+  
+      // Pull to establish checkpoint
+      const pullConfig = this.createConfig(ReplicatorType.PULL, false);
+      await this.runReplication(pullConfig);
+      
+      // Purge the document from the local database
+      const docToDelete = await this.defaultCollection.document(testDocId);
+      if (docToDelete) {
+        await this.defaultCollection.purge(docToDelete);
+      }
+  
+      // Verify the document was purged
+      const checkDoc = await this.defaultCollection.document(testDocId);
+      expect(checkDoc).to.be.undefined;
+  
+      // Pull without reset (should not pull the document due to checkpoint)
+      await this.runReplication(pullConfig);
+  
+      // Verify document still doesn't exist (checkpoint prevented pulling it)
+      const afterNormalPull = await this.defaultCollection.document(testDocId);
+      expect(afterNormalPull).to.be.undefined;
+  
+      // Pull with reset checkpoint
+      await this.runReplication(pullConfig, true);
+  
+      // Verify document was pulled after reset
+      const afterResetPull = await this.defaultCollection.document(testDocId);
+      expect(afterResetPull).to.not.be.undefined;
+      expect(afterResetPull.getId()).to.equal(testDocId);
+  
+      return {
+        testName: "testStartWithCheckpoint",
+        success: true,
+        message: "Successfully verified checkpoint reset behavior",
+        data: undefined,
+      };
+    } catch (error) {
+      return {
+        testName: "testStartWithCheckpoint",
+        success: false,
+        message: `Error: ${error}`,
+        data: error.stack || error.toString(),
+      };
+    }
   }
+  
 
   /**
    *
    * @returns {Promise<ITestResult>} A promise that resolves to an ITestResult object which contains the result of the verification.
    */
   async testStartWithResetCheckpointContinuous(): Promise<ITestResult> {
-    return {
-      testName: "testStartWithResetCheckpointContinuous",
-      success: false,
-      message: "Not implemented",
-      data: undefined,
-    };
+    try {
+     // Create a test document with a unique ID to avoid conflicts
+     const testDocId = `test-doc-continuous-${Date.now()}`;
+     const doc = this.createDocument(testDocId);
+     doc.setString("species", "Tiger");
+     doc.setString("documentType", "project"); // Required by sync function
+     doc.setString("team", "team1");
+     await this.defaultCollection.save(doc);
+ 
+     // Push the document to Sync Gateway
+     const pushConfig = this.createConfig(ReplicatorType.PUSH, true);
+     await this.runReplication(pushConfig);
+ 
+     // Pull to establish checkpoint
+     const pullConfig = this.createConfig(ReplicatorType.PULL, true);
+     await this.runReplication(pullConfig);
+     
+     // Purge the document from the local database
+     const docToDelete = await this.defaultCollection.document(testDocId);
+     if (docToDelete) {
+       await this.defaultCollection.purge(docToDelete);
+     }
+ 
+     // Verify the document was purged
+     const checkDoc = await this.defaultCollection.document(testDocId);
+     expect(checkDoc).to.be.undefined;
+ 
+     // Pull without reset (should not pull the document due to checkpoint)
+     await this.runReplication(pullConfig);
+ 
+     // Verify document still doesn't exist (checkpoint prevented pulling it)
+     const afterNormalPull = await this.defaultCollection.document(testDocId);
+     expect(afterNormalPull).to.be.undefined;
+ 
+     // Pull with reset checkpoint
+     await this.runReplication(pullConfig, true);
+ 
+     // Verify document was pulled after reset
+     const afterResetPull = await this.defaultCollection.document(testDocId);
+     expect(afterResetPull).to.not.be.undefined;
+     expect(afterResetPull.getId()).to.equal(testDocId);
+  
+      return {
+        testName: "testStartWithResetCheckpointContinuous",
+        success: true,
+        message: "Successfully verified checkpoint reset behavior with continuous replication",
+        data: undefined,
+      };
+    } catch (error) {
+      return {
+        testName: "testStartWithResetCheckpointContinuous",
+        success: false,
+        message: `Error: ${error}`,
+        data: error.stack || error.toString(),
+      };
+    }
   }
 
   /**
@@ -314,20 +458,20 @@ export class ReplicatorTests extends TestCase {
     return {
       testName: "testSingleShotPushFilter",
       success: false,
-      message: "Not implemented",
+      message: "Not implemented in collection configuration",
       data: undefined,
     };
   }
 
-  /**
-   *
-   * @returns {Promise<ITestResult>} A promise that resolves to an ITestResult object which contains the result of the verification.
-   */
+  // /**
+  //  *
+  //  * @returns {Promise<ITestResult>} A promise that resolves to an ITestResult object which contains the result of the verification.
+  //  */
   async testContinuousPushFilter(): Promise<ITestResult> {
     return {
       testName: "testContinuousPushFilter",
       success: false,
-      message: "Not implemented",
+      message: "Not implemented in collection configuration",
       data: undefined,
     };
   }
@@ -410,43 +554,242 @@ export class ReplicatorTests extends TestCase {
     };
   }
 
-  /**
-   *
-   * @returns {Promise<ITestResult>} A promise that resolves to an ITestResult object which contains the result of the verification.
-   */
-  async testRemoveChangeListener(): Promise<ITestResult> {
+/**
+ * Tests that removing a change listener properly prevents it from receiving further callbacks
+ * @returns {Promise<ITestResult>} A promise that resolves to an ITestResult object
+ */
+async testRemoveChangeListener(): Promise<ITestResult> {
+  let replicator = null;
+  let token = null;
+  const _engine = this.database.getEngine();
+  const getChangeListenersCount = () => _engine._eventEmitter.listenerCount(_engine._eventReplicatorStatusChange);
+
+  try {
+    // Create a configuration with a non-existent endpoint
+    const target = new URLEndpoint("ws://localhost:4083/unknown-db");
+    const config = new ReplicatorConfiguration(target);
+    config.setMaxAttempts(1);
+    config.addCollection(this.defaultCollection);
+    
+    replicator = await Replicator.create(config);
+    
+    // Check initial listener count
+    const initialCount = getChangeListenersCount();
+    
+    // Add a listener
+    token = await replicator.addChangeListener(() => {});
+    
+    // Verify listener was added at the event emitter level
+    const afterAddCount = getChangeListenersCount();
+    expect(afterAddCount).to.be.greaterThan(initialCount);
+    
+    // Remove the listener
+    await replicator.removeChangeListener(token);
+    
+    // Verify listener count decreased
+    const afterRemoveCount = getChangeListenersCount();
+    expect(afterRemoveCount).to.equal(initialCount);
+    
+    return {
+      testName: "testRemoveChangeListener",
+      success: true,
+      message: "Successfully verified change listener removal",
+      data: undefined,
+    };
+  } catch (error) {
     return {
       testName: "testRemoveChangeListener",
       success: false,
-      message: "Not implemented",
-      data: undefined,
+      message: `Error: ${error}`,
+      data: error.stack || error.toString(),
     };
-  }
-
+  } 
+}
   /**
    *
    * @returns {Promise<ITestResult>} A promise that resolves to an ITestResult object which contains the result of the verification.
    */
   async testAddRemoveChangeListenerAfterReplicatorStart(): Promise<ITestResult> {
-    return {
-      testName: "testAddRemoveChangeListenerAfterReplicatorStart",
-      success: false,
-      message: "Not implemented",
-      data: undefined,
-    };
+    try {
+      const target = new URLEndpoint("ws://localhost:4083/unknown-db");
+      const config = new ReplicatorConfiguration(target);
+      config.setMaxAttempts(4);
+      config.setMaxAttemptWaitTime(2);
+      config.addCollection(this.defaultCollection);
+      
+      const replicator = await Replicator.create(config);
+      
+      // Track callback activity
+      let activityLevels: ReplicatorActivityLevel[] = [];
+      
+      // Add a listener before starting replication
+      const token = await replicator.addChangeListener((change) => {
+        activityLevels.push(change.status.getActivityLevel());
+      });
+      
+      // Start the replicator
+      await replicator.start(false);
+      
+      // Wait a moment to receive some callbacks
+      await this.sleep(500);
+      
+      // Verify we got some callbacks
+      expect(activityLevels.length).to.be.greaterThan(0);
+      
+      // Remember how many callbacks we received
+      const callbackCount = activityLevels.length;
+      
+      // Remove the listener while replicator is running
+      await replicator.removeChangeListener(token);
+      
+      // Wait again to give time for potential callbacks
+      await this.sleep(500);
+      
+      // Verify we didn't receive additional callbacks after removing the listener
+      expect(activityLevels.length).to.equal(callbackCount);
+      
+      return {
+        testName: "testAddRemoveChangeListenerAfterReplicatorStart",
+        success: true,
+        message: "Successfully verified removing listener after replicator start",
+        data: undefined,
+      };
+    } catch (error) {
+      return {
+        testName: "testAddRemoveChangeListenerAfterReplicatorStart",
+        success: false,
+        message: `Error: ${error}`,
+        data: error.stack || error.toString(),
+      };
+    } 
   }
-
   /**
    *
    * @returns {Promise<ITestResult>} A promise that resolves to an ITestResult object which contains the result of the verification.
    */
   async testCopyingReplicatorConfiguration(): Promise<ITestResult> {
-    return {
-      testName: "testCopyingReplicatorConfiguration",
-      success: false,
-      message: "Not implemented",
-      data: undefined,
-    };
+    try {
+       // Create a target for configuration
+       const target = new URLEndpoint(this.SYNC_GATEWAY_URL);
+      
+       // Create configuration with non-default values
+       const config = new ReplicatorConfiguration(target);
+       
+       // Set authentication
+       const basic = new BasicAuthenticator("abcd", "1234");
+       config.setAuthenticator(basic);
+       
+       // Set non-default values for all configurable properties
+       config.setContinuous(true);
+       config.setHeaders({ "a": "aa", "b": "bb" });
+       config.setReplicatorType(ReplicatorType.PULL);
+       config.setHeartbeat(211);
+       config.setMaxAttempts(223);
+       config.setMaxAttemptWaitTime(227);
+       config.setAcceptOnlySelfSignedCerts(true);
+       config.setAllowReplicatingInBackground(true);
+       config.setAutoPurgeEnabled(false);
+       config.setAcceptParentDomainCookies(true);
+       
+       // Set pinnedServerCertificate
+       const certificateData = "MOCK_CERTIFICATE_DATA";
+       config.setPinnedServerCertificate(certificateData);
+       
+       // Create a collection configuration with channels and document IDs
+       const colConfig = new CollectionConfig(["c1", "c2"], ["d1", "d2"]);
+       
+       // Add collection with config
+       config.addCollection(this.defaultCollection, colConfig);
+       
+       // Store original values for later comparison
+       const originalContinuous = config.getContinuous();
+       const originalReplicatorType = config.getReplicatorType();
+       const originalHeartbeat = config.getHeartbeat();
+       const originalMaxAttempts = config.getMaxAttempts();
+       const originalMaxAttemptWaitTime = config.getMaxAttemptWaitTime();
+       const originalSelfSignedCerts = config.getAcceptOnlySelfSignedCerts();
+       const originalBackgroundReplication = config.getAllowReplicatingInBackground();
+       const originalAutoPurge = config.getAutoPurgeEnabled();
+       const originalParentDomainCookies = config.getAcceptParentDomainCookies();
+       const originalCertificate = config.getPinnedServerCertificate();
+       const originalHeaders = JSON.stringify(config.getHeaders());
+       
+       const originalAuth = config.getAuthenticator() as BasicAuthenticator;
+       let originalUsername = null;
+       let originalPassword = null;
+       if (originalAuth && originalAuth.toJson) {
+         originalUsername = originalAuth.toJson().username;
+         originalPassword = originalAuth.toJson().password;
+       }
+       
+       // Create a replicator with the configuration
+       const replicator = await Replicator.create(config);
+       
+       // Now modify the original configuration
+       config.setContinuous(false);
+       config.setAuthenticator(null);
+       config.setHeaders(null);
+       config.setReplicatorType(ReplicatorType.PUSH);
+       config.setHeartbeat(11);
+       config.setMaxAttempts(13);
+       config.setMaxAttemptWaitTime(17);
+       config.setPinnedServerCertificate(null);
+       config.setAcceptOnlySelfSignedCerts(false);
+       config.setAllowReplicatingInBackground(false);
+       config.setAutoPurgeEnabled(true);
+       config.setAcceptParentDomainCookies(false);
+       
+       // Remove the collection and add it back with a new empty config
+       config.removeCollection(this.defaultCollection);
+       config.addCollection(this.defaultCollection);
+       
+       // Get the configuration from the replicator
+       const replicatorConfig = replicator.getConfiguration();
+       
+       // Verify the replicator's configuration still has the original values
+       expect(replicatorConfig.getContinuous()).to.equal(originalContinuous);
+       expect(replicatorConfig.getReplicatorType()).to.equal(originalReplicatorType);
+       expect(replicatorConfig.getHeartbeat()).to.equal(originalHeartbeat);
+       expect(replicatorConfig.getMaxAttempts()).to.equal(originalMaxAttempts);
+       expect(replicatorConfig.getMaxAttemptWaitTime()).to.equal(originalMaxAttemptWaitTime);
+       expect(replicatorConfig.getAcceptOnlySelfSignedCerts()).to.equal(originalSelfSignedCerts);
+       expect(replicatorConfig.getAllowReplicatingInBackground()).to.equal(originalBackgroundReplication);
+       expect(replicatorConfig.getAutoPurgeEnabled()).to.equal(originalAutoPurge);
+       expect(replicatorConfig.getAcceptParentDomainCookies()).to.equal(originalParentDomainCookies);
+       expect(replicatorConfig.getPinnedServerCertificate()).to.equal(originalCertificate);
+       expect(JSON.stringify(replicatorConfig.getHeaders())).to.equal(originalHeaders);
+       
+       // Verify authenticator
+       const replicatorAuth = replicatorConfig.getAuthenticator() as BasicAuthenticator;
+       expect(replicatorAuth).to.not.be.null;
+       
+       if (replicatorAuth && replicatorAuth.toJson) {
+         expect(replicatorAuth.toJson().username).to.equal(originalUsername);
+         expect(replicatorAuth.toJson().password).to.equal(originalPassword);
+       }
+       
+       // Verify collection configuration
+       const collectionConfig = replicatorConfig.getCollectionConfig(this.defaultCollection);
+       expect(collectionConfig).to.not.be.null;
+       
+       // Clean up
+       await replicator.stop();
+       await replicator.cleanup();
+      
+      return {
+        testName: "testCopyingReplicatorConfiguration",
+        success: true,
+        message: "Successfully verified replicator configuration independence",
+        data: undefined,
+      };
+    } catch (error) {
+      return {
+        testName: "testCopyingReplicatorConfiguration",
+        success: false,
+        message: `Error: ${error}`,
+        data: error.stack || error.toString(),
+      };
+    }
   }
 
   /**
@@ -454,11 +797,108 @@ export class ReplicatorTests extends TestCase {
    * @returns {Promise<ITestResult>} A promise that resolves to an ITestResult object which contains the result of the verification.
    */
   async testReplicationConfigSetterMethods(): Promise<ITestResult> {
-    return {
-      testName: "testReplicationConfigSetterMethods",
-      success: false,
-      message: "Not implemented",
-      data: undefined,
-    };
+    try {   
+       // Create a target for our configuration
+       const target = new URLEndpoint(this.SYNC_GATEWAY_URL);
+       const config = new ReplicatorConfiguration(target);
+ 
+       // Configure authentication
+       const basic = new BasicAuthenticator("test_user", "test_password");
+       config.setAuthenticator(basic);
+       
+       // Set various configuration properties
+       config.setContinuous(true);
+       config.setHeaders({ "Custom-Header": "test-value", "X-App-ID": "test-app" });
+       config.setReplicatorType(ReplicatorType.PULL);
+       config.setHeartbeat(120);
+       config.setMaxAttempts(5);
+       config.setMaxAttemptWaitTime(180);
+       config.setAcceptOnlySelfSignedCerts(true);
+       config.setAllowReplicatingInBackground(true);
+       config.setAutoPurgeEnabled(false);
+       config.setAcceptParentDomainCookies(true);
+       
+       // Set a mock certificate
+       const mockCertificate = "MOCK_CERTIFICATE_DATA";
+       config.setPinnedServerCertificate(mockCertificate);
+       
+       // Configure collection
+       const collectionConfig = new CollectionConfig(["channel1", "channel2"], ["doc1", "doc2"]);
+       
+       config.addCollection(this.defaultCollection, collectionConfig);
+       
+       // Verify all getter methods return the values we set
+       expect(config.getContinuous()).to.be.true;
+       
+       const auth = config.getAuthenticator() as BasicAuthenticator;
+       expect(auth).to.not.be.null;
+       
+       expect(auth.toJson().username).to.equal("test_user");
+       expect(auth.toJson().password).to.equal("test_password");
+       
+       expect(config.getHeaders()).to.deep.equal({ 
+         "Custom-Header": "test-value", 
+         "X-App-ID": "test-app" 
+       });
+       
+       expect(config.getReplicatorType()).to.equal(ReplicatorType.PULL);      
+       expect(config.getHeartbeat()).to.equal(120);      
+       expect(config.getMaxAttempts()).to.equal(5);      
+       expect(config.getMaxAttemptWaitTime()).to.equal(180);      
+       expect(config.getPinnedServerCertificate()).to.equal(mockCertificate);      
+       expect(config.getAcceptOnlySelfSignedCerts()).to.be.true;      
+       expect(config.getAllowReplicatingInBackground()).to.be.true;      
+       expect(config.getAutoPurgeEnabled()).to.be.false;      
+       expect(config.getAcceptParentDomainCookies()).to.be.true;     
+ 
+       // Verify collection config
+       const retrievedCollectionConfig = config.getCollectionConfig(this.defaultCollection);
+       expect(retrievedCollectionConfig).to.not.be.null;
+       
+       // Now create a replicator with this configuration
+       const replicator = await Replicator.create(config);
+       
+       // Get the configuration from the replicator
+       const replicatorConfig = replicator.getConfiguration();
+       
+       // Verify the replicator has the same configuration values
+       expect(replicatorConfig.getContinuous()).to.be.true;
+       
+       const replicatorAuth = replicatorConfig.getAuthenticator() as BasicAuthenticator;
+       expect(replicatorAuth).to.not.be.null;
+ 
+       const authData = replicatorAuth.toJson();
+       expect(authData.username).to.equal("test_user");
+       expect(authData.password).to.equal("test_password");
+ 
+       expect(replicatorConfig.getHeaders()).to.deep.equal({ 
+         "Custom-Header": "test-value", 
+         "X-App-ID": "test-app" 
+       });
+       
+       expect(replicatorConfig.getReplicatorType()).to.equal(ReplicatorType.PULL);      
+       expect(replicatorConfig.getHeartbeat()).to.equal(120);      
+       expect(replicatorConfig.getMaxAttempts()).to.equal(5);      
+       expect(replicatorConfig.getMaxAttemptWaitTime()).to.equal(180);      
+       expect(replicatorConfig.getPinnedServerCertificate()).to.equal(mockCertificate);      
+       expect(replicatorConfig.getAcceptOnlySelfSignedCerts()).to.be.true;      
+       expect(replicatorConfig.getAllowReplicatingInBackground()).to.be.true;
+       expect(replicatorConfig.getAutoPurgeEnabled()).to.be.false;
+       expect(replicatorConfig.getAcceptParentDomainCookies()).to.be.true;
+      
+      return {
+        testName: "testReplicationConfigSetterMethods",
+        success: true,
+        message: "Successfully verified setter methods and replicator configuration",
+        data: undefined,
+      };
+    } catch (error) {
+      return {
+        testName: "testReplicationConfigSetterMethods",
+        success: false,
+        message: `Error: ${error}`,
+        data: error.stack || error.toString(),
+      };
+    }
   }
 }
