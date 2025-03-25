@@ -31,6 +31,8 @@ This will start:
 
 ### Container Details
 
+Containers configuration based on [Tutorial - Set up Sync Gateway for use with Inventory Demo App](https://developer.couchbase.com/sync-gateway-setup), check for more configuration details.
+
 #### Couchbase Server Container
 
 - Ports: 8091-8096, 11210
