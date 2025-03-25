@@ -8,7 +8,8 @@ import {
   ReplicatorType,
   URLEndpoint,
   CollectionConfig,
-  Collection
+  Collection,
+  MutableDocument,
 } from "cblite-js";
 import { expect } from "chai";
 
@@ -43,10 +44,12 @@ export class ReplicatorTests extends TestCase {
     return config;
   }
 
-  private async runReplication(config: ReplicatorConfiguration, reset: boolean = false): Promise<void> {
+  private async runReplication(config: ReplicatorConfiguration, reset: boolean = false, expectedError?: number): Promise<void> {
     const replicator = await Replicator.create(config);
+    
 
-    const promise = new Promise<void>((resolve, reject) => {
+    let listenerToken: string;
+    const completionPromise = new Promise<void>((resolve, reject) => {
       replicator.addChangeListener((change) => {
         const status = change.status;
         const activityLevel = status.getActivityLevel();
@@ -57,24 +60,34 @@ export class ReplicatorTests extends TestCase {
       
         if (activityLevel === ReplicatorActivityLevel.STOPPED) {
           const error = status.getError();
-          if (error) {
-            reject(new Error(`Replication error: ${JSON.stringify(error)}`));
+        
+          if (expectedError !== undefined) {
+            expect(error).to.not.be.undefined;
+            expect(error.code).to.equal(expectedError);
+
+            resolve();
           } else {
+            expect(error).to.be.undefined;
             resolve();
           }
         }
-      }).then(token => token);
+      }).then(token => {
+        listenerToken = token;
+      });
     });
     
     try {
-      await replicator.start(reset);    
-      const token = await promise;
-      await replicator.removeChangeListener(token);
+      await replicator.start(reset);
+      await completionPromise;
+
     } catch (e) {
-      console.error(e)
+      console.error(e);
+    } finally {
+
+      await replicator.removeChangeListener(listenerToken);
+      replicator.stop();
     }
   }
-  
 
   /**
    *
@@ -429,14 +442,130 @@ export class ReplicatorTests extends TestCase {
    * @returns {Promise<ITestResult>} A promise that resolves to an ITestResult object which contains the result of the verification.
    */
   async testDocumentReplicationEventWithPullConflict(): Promise<ITestResult> {
-    return {
-      testName: "testDocumentReplicationEventWithPullConflict",
-      success: false,
-      message: "Not implemented",
-      data: undefined,
-    };
+    try {
+      const docId = `doc-conflict-pull-${Date.now()}`;
+      const localDoc = this.createDocument(docId);
+      localDoc.setString("species", "Tiger");
+      localDoc.setString("pattern", "Star");
+      localDoc.setString("documentType", "project"); // Required by sync function
+      localDoc.setString("team", "team1");
+      await this.defaultCollection.save(localDoc);
+      
+      const target = new URLEndpoint("ws://localhost:4984/projects");
+      const auth = new BasicAuthenticator("demo@example.com", "P@ssw0rd12");
+      
+      // Push the document to Sync Gateway
+      let config = new ReplicatorConfiguration(target);
+      config.addCollection(this.defaultCollection);
+      config.setReplicatorType(ReplicatorType.PUSH);
+      config.setAuthenticator(auth);
+      
+      await this.runReplication(config);
+      
+      // Create a separate database to modify the document on Sync Gateway
+      const otherDB = await this.getDatabase(this.otherDatabaseName, this.directory, "");
+      await otherDB.open();
+      this.otherDatabase = otherDB;
+      const otherCollection = await otherDB.defaultCollection();
+      
+      // Pull the document to the other database
+      config = new ReplicatorConfiguration(target);
+      config.addCollection(otherCollection);
+      config.setReplicatorType(ReplicatorType.PULL);
+      config.setAuthenticator(auth);
+      
+      await this.runReplication(config);
+      
+      // Modify the document in the other database
+      const otherDoc = await otherCollection.document(docId);
+      const mutableOtherDoc = MutableDocument.fromDocument(otherDoc);
+      mutableOtherDoc.setString("pattern", "Striped"); // Different from "Star"
+      await otherCollection.save(mutableOtherDoc);
+      
+      // Push the modified document back to Sync Gateway
+      config = new ReplicatorConfiguration(target);
+      config.addCollection(otherCollection);
+      config.setReplicatorType(ReplicatorType.PUSH);
+      config.setAuthenticator(auth);
+      
+      await this.runReplication(config);
+      
+      // Now we have a conflict: local document is "Star", Sync Gateway has "Striped"
+      
+      // Try to pull, which should merge with local version
+      config = new ReplicatorConfiguration(target);
+      config.addCollection(this.defaultCollection);
+      config.setReplicatorType(ReplicatorType.PULL);
+      config.setAuthenticator(auth);
+      
+      const replicator = await Replicator.create(config);
+      
+      // Track the replication events
+      let conflictDoc: any = null;
+      
+      const docChangePromise = new Promise<void>((resolve) => {
+        replicator.addDocumentChangeListener((change) => {
+          if (!change.isPush) {
+            for (const doc of change.documents) {
+              if (doc.id === docId) {
+                conflictDoc = doc;
+                resolve();
+              }
+            }
+          }
+        });
+      });
+      
+      // Start replication and wait for the document change event
+      await replicator.start(false);
+      
+      // Wait for the document change event or timeout
+      const timeoutPromise = new Promise<void>((_, reject) => {
+        setTimeout(() => reject(new Error("Timeout waiting for document change event")), 5000);
+      });
+      
+      try {
+        await Promise.race([docChangePromise, timeoutPromise]);
+      } catch (e) {
+        // If we timeout, stop replication and throw
+        await replicator.stop();
+        throw e;
+      }
+      
+      // Stop replication
+      await replicator.stop();
+      
+      // Verify the document replication event
+      expect(conflictDoc).to.not.be.null;
+      expect(conflictDoc.id).to.equal(docId);
+      expect(conflictDoc.error).to.be.undefined; // Pull conflict doesn't report an error
+      
+      // Check that the document was updated with the remote version
+      const updatedDoc = await this.defaultCollection.document(docId);
+      expect(updatedDoc.getString("pattern")).to.equal("Striped");
+      
+      return {
+        testName: "testDocumentReplicationEventWithPullConflict",
+        success: true,
+        message: "Successfully verified document replication event with pull conflict",
+        data: undefined,
+      };
+    } catch (error) {
+      return {
+        testName: "testDocumentReplicationEventWithPullConflict",
+        success: false,
+        message: `Error: ${error}`,
+        data: error.stack || error.toString(),
+      };
+    } finally {
+      // Clean up the other database
+      if (this.otherDatabase) {
+        await this.otherDatabase.close();
+        await this.deleteDatabase(this.otherDatabase);
+        this.otherDatabase = undefined;
+      }
+    }
   }
-
   /**
    *
    * @returns {Promise<ITestResult>} A promise that resolves to an ITestResult object which contains the result of the verification.
