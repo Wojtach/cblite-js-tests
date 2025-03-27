@@ -22,6 +22,9 @@ if ! [ -f "$FILE" ]; then
   --cluster-index-ramsize $COUCHBASE_INDEX_RAM_SIZE \
   --cluster-eventing-ramsize $COUCHBASE_EVENTING_RAM_SIZE \
   --index-storage-setting default
+  if [ $? -ne 0 ]; then
+  echo "ERROR: Failed to initialize cluster" && exit 1
+  fi
 
   sleep 2s 
 
@@ -34,6 +37,9 @@ if ! [ -f "$FILE" ]; then
   --bucket $COUCHBASE_BUCKET \
   --bucket-ramsize $COUCHBASE_BUCKET_RAMSIZE \
   --bucket-type couchbase 
+  if [ $? -ne 0 ]; then
+  echo "ERROR: Failed to initialize cluster" && exit 1
+  fi
 
   sleep 2s 
 
@@ -49,6 +55,9 @@ if ! [ -f "$FILE" ]; then
   --rbac-password $COUCHBASE_RBAC_PASSWORD \
   --roles mobile_sync_gateway[*] \
   --auth-domain local
+  if [ $? -ne 0 ]; then
+  echo "ERROR: Failed to initialize cluster" && exit 1
+  fi
 
   sleep 2s 
 
@@ -68,6 +77,9 @@ if ! [ -f "$FILE" ]; then
   /opt/couchbase/bin/curl -v http://localhost:8093/query/service \
   -u $COUCHBASE_ADMINISTRATOR_USERNAME:$COUCHBASE_ADMINISTRATOR_PASSWORD \
   -d 'statement=CREATE INDEX idx_projects_projectId on projects(projectId)'
+  if [ $? -ne 0 ]; then
+  echo "ERROR: Failed to create index idx_projects_team" && exit 1
+  fi
 
   sleep 2s
 
@@ -79,6 +91,9 @@ if ! [ -f "$FILE" ]; then
   -u $COUCHBASE_ADMINISTRATOR_USERNAME \
   -p $COUCHBASE_ADMINISTRATOR_PASSWORD \
   -d "file:///opt/couchbase/init/sample-data.json" -b 'projects' -g %projectId%
+  if [ $? -ne 0 ]; then
+  echo "ERROR: Failed to import sample data" && exit 1
+  fi
 
   # create file so we know that the cluster is setup and don't run the setup again 
   touch $FILE
