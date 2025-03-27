@@ -4,7 +4,7 @@ Test suite for the [cblite-js](https://github.com/Couchbase-Ecosystem/cblite-js)
 
 ## Overview
 
-This repository contains test files for validating the cblite-js TypeScript interface definitions against real-world use cases. It includes a Docker-based testing environment with Couchbase Server and Sync Gateway for synchronization testing.
+This repository contains test files for validating the cblite-js TypeScript interface definitions against real-world use cases. It includes a Docker-based testing environment with Couchbase Server and Sync Gateway for replicator tests.
 
 The tests are designed to be injected into and executed in the example app ([react-native example app](https://github.com/Couchbase-Ecosystem/cbl-reactnative/tree/main/expo-example), [ionic example app](https://github.com/Couchbase-Ecosystem/cbl-ionic/tree/main/example)) rather than through a traditional test runner.
 
