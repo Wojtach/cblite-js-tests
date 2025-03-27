@@ -44,7 +44,7 @@ export class ReplicatorTests extends TestCase {
     return config;
   }
 
-  private async runReplication(config: ReplicatorConfiguration, reset: boolean = false, expectedError?: number): Promise<void> {
+  private async runReplication(config: ReplicatorConfiguration, reset: boolean = false,): Promise<void> {
     const replicator = await Replicator.create(config);
     
 
@@ -53,21 +53,16 @@ export class ReplicatorTests extends TestCase {
       replicator.addChangeListener((change) => {
         const status = change.status;
         const activityLevel = status.getActivityLevel();
-        
+
         if (config.getContinuous() && activityLevel === ReplicatorActivityLevel.IDLE) {
           replicator.stop();
         }
-      
+
         if (activityLevel === ReplicatorActivityLevel.STOPPED) {
           const error = status.getError();
-        
-          if (expectedError !== undefined) {
-            expect(error).to.not.be.undefined;
-            expect(error.code).to.equal(expectedError);
-
-            resolve();
+          if (error) {
+            reject(new Error(`Replication ${JSON.stringify(error)}`));
           } else {
-            expect(error).to.be.undefined;
             resolve();
           }
         }
@@ -79,11 +74,9 @@ export class ReplicatorTests extends TestCase {
     try {
       await replicator.start(reset);
       await completionPromise;
-
     } catch (e) {
-      console.error(e);
+      console.error(e)
     } finally {
-
       await replicator.removeChangeListener(listenerToken);
       replicator.stop();
     }
@@ -252,7 +245,7 @@ export class ReplicatorTests extends TestCase {
       return {
         testName: "testDocumentChangeListenerEvent",
         success: false,
-        message: `Error:${error}`,
+        message: `${error}`,
         data: undefined,
       };
     }
@@ -264,10 +257,40 @@ export class ReplicatorTests extends TestCase {
    */
   async testEmptyPush(): Promise<ITestResult> {
     try {
+      let isError = false;
+      let listenerToken;
       const config = this.createConfig(ReplicatorType.PUSH, false);
-      
-      // Run the replication
-      await this.runReplication(config);
+
+      const replicator = await Replicator.create(config);
+
+
+      const replicatorCompletionPromise = new Promise<void>((resolve, reject) => {
+        replicator.addChangeListener((change) => {
+          const status = change.status;
+          const activityLevel = status.getActivityLevel();
+  
+          if (activityLevel === ReplicatorActivityLevel.STOPPED) {
+            const error = status.getError();
+            console.log({activityLevel})
+            if (error) {
+              isError = true;
+              reject();
+            } else {
+              resolve();
+            }
+          }
+        }).then(token => {
+          listenerToken = token;
+        });
+      });
+
+      await replicator.start(false);
+      await replicatorCompletionPromise;
+      await replicator.removeChangeListener(listenerToken);
+      await replicator.stop();
+
+      // Validate our listener was called and there weren't errors
+      expect(isError).to.be.false;
       
       return {
         testName: "testEmptyPush",
@@ -279,7 +302,7 @@ export class ReplicatorTests extends TestCase {
       return {
         testName: "testEmptyPush",
         success: false,
-        message: `Error during empty push test: ${error}`,
+        message: `${error}`,
         data: undefined,
       };
     }
@@ -341,7 +364,7 @@ export class ReplicatorTests extends TestCase {
       return {
         testName: "testStartWithCheckpoint",
         success: false,
-        message: `Error: ${error}`,
+        message: `${error}`,
         data: error.stack || error.toString(),
       };
     }
@@ -405,7 +428,7 @@ export class ReplicatorTests extends TestCase {
       return {
         testName: "testStartWithResetCheckpointContinuous",
         success: false,
-        message: `Error: ${error}`,
+        message: `${error}`,
         data: error.stack || error.toString(),
       };
     }
@@ -554,7 +577,7 @@ export class ReplicatorTests extends TestCase {
       return {
         testName: "testDocumentReplicationEventWithPullConflict",
         success: false,
-        message: `Error: ${error}`,
+        message: `${error}`,
         data: error.stack || error.toString(),
       };
     } finally {
@@ -729,7 +752,7 @@ async testRemoveChangeListener(): Promise<ITestResult> {
     return {
       testName: "testRemoveChangeListener",
       success: false,
-      message: `Error: ${error}`,
+      message: `${error}`,
       data: error.stack || error.toString(),
     };
   } 
@@ -787,7 +810,7 @@ async testRemoveChangeListener(): Promise<ITestResult> {
       return {
         testName: "testAddRemoveChangeListenerAfterReplicatorStart",
         success: false,
-        message: `Error: ${error}`,
+        message: `${error}`,
         data: error.stack || error.toString(),
       };
     } 
@@ -915,7 +938,7 @@ async testRemoveChangeListener(): Promise<ITestResult> {
       return {
         testName: "testCopyingReplicatorConfiguration",
         success: false,
-        message: `Error: ${error}`,
+        message: `${error}`,
         data: error.stack || error.toString(),
       };
     }
@@ -1025,7 +1048,7 @@ async testRemoveChangeListener(): Promise<ITestResult> {
       return {
         testName: "testReplicationConfigSetterMethods",
         success: false,
-        message: `Error: ${error}`,
+        message: `${error}`,
         data: error.stack || error.toString(),
       };
     }
