@@ -16,10 +16,6 @@
     "strict": false,
     "skipLibCheck": true,
     "resolveJsonModule": true,
-    "jsx": "react-native",
-    "paths": {
-      "cblite-js": ["../../node_modules/cbl-reactnative/src"]
-    }
   },
   "files": ["index.ts"]
 }
