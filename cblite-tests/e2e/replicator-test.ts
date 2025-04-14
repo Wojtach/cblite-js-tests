@@ -841,6 +841,82 @@ async testContinuousPushFilter(): Promise<ITestResult> {
         }
   }
 
+   /**
+   *
+   * @returns {Promise<ITestResult>} A promise that resolves to an ITestResult object which contains the result of the verification.
+   */
+  async testFilterPerformance(): Promise<ITestResult> {
+    try {
+      const count = 100;
+
+      // Generate and save documents; using a single prefix "test"
+      const prepareDocuments = async (count: number, prefix: string) => {
+        const savedDocIds: string[] = [];
+        for (let i = 0; i < count; i++) {
+          const docId = `${prefix}_doc_${i}_${Date.now()}`;
+          const docData = {
+            type: i % 3 === 0 ? 'type1' : i % 3 === 1 ? 'type2' : 'type3',
+            name: `Document ${i}`,
+            documentType: 'project',
+            team: 'team1',
+            value: Math.random() * 1000,
+            isActive: i % 2 === 0,
+            tags: [`tag${i % 5}`, `tag${(i + 2) % 7}`]
+          };
+
+          const mutableDoc = this.createDocumentWithIdAndData(docId, docData);
+          await this.defaultCollection.save(mutableDoc);
+          savedDocIds.push(docId);
+        }
+        return savedDocIds;
+      };
+
+      // Purge documents using their IDs
+      const purgeDocuments = async (docIds: string[]) => {
+        for (const id of docIds) {
+          await this.defaultCollection.purgeById(id);
+        }
+      };
+
+  
+      // Create dataset and push documents to the server
+      const docIds = await prepareDocuments(count, "test");
+      const pushConfig = this.createConfig(ReplicatorType.PUSH, false);
+
+      await this.runReplication(pushConfig);
+
+      await purgeDocuments(docIds);
+
+      // Setup the filter configuration for pull replication
+      const collConfig = new CollectionConfig(undefined, undefined);
+      collConfig.setPullFilter((doc, flags) => {
+        return doc.getString('type') === 'type1';
+      });
+
+      const startTime = Date.now();
+      const replConfig = this.createConfig(
+        ReplicatorType.PULL, false, this.defaultCollection, collConfig
+      )
+      await this.runReplication(replConfig);
+      const duration = Date.now() - startTime;
+      console.log(`Performance with filter: ${duration} ms`);
+
+      return {
+        testName: "testFilterPerformance",
+        success: true,
+        message: `Filter performance test completed successfully: ${duration} ms`,
+        data: duration.toString()
+      };
+    } catch (error) {
+      return {
+        testName: "testFilterPerformance",
+        success: false,
+        message: `${error}`,
+        data: error.stack || error.toString()
+      };
+    }
+  }
+
   /**
    *
    * @returns {Promise<ITestResult>} A promise that resolves to an ITestResult object which contains the result of the verification.
