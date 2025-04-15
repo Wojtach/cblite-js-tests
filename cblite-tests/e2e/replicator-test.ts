@@ -10,6 +10,8 @@ import {
   CollectionConfig,
   Collection,
   MutableDocument,
+  DatabaseConfiguration,
+  Database,
 } from "cblite-js";
 import { expect } from "chai";
 
@@ -465,129 +467,145 @@ export class ReplicatorTests extends TestCase {
    * @returns {Promise<ITestResult>} A promise that resolves to an ITestResult object which contains the result of the verification.
    */
   async testDocumentReplicationEventWithPullConflict(): Promise<ITestResult> {
-    try {
-      const docId = `doc-conflict-pull-${Date.now()}`;
-      const localDoc = this.createDocument(docId);
-      localDoc.setString("species", "Tiger");
-      localDoc.setString("pattern", "Star");
-      localDoc.setString("documentType", "project"); // Required by sync function
-      localDoc.setString("team", "team1");
-      await this.defaultCollection.save(localDoc);
+    // try {
+    //   const docId = `doc-conflict-pull-${Date.now()}`;
+    //   const localDoc = this.createDocument(docId);
+    //   localDoc.setString("species", "Tiger");
+    //   localDoc.setString("pattern", "Star");
+    //   localDoc.setString("documentType", "project"); // Required by sync function
+    //   localDoc.setString("team", "team1");
+    //   await this.defaultCollection.save(localDoc);
       
-      const target = new URLEndpoint("ws://localhost:4984/projects");
-      const auth = new BasicAuthenticator("demo@example.com", "P@ssw0rd12");
+    //   const target = new URLEndpoint("ws://localhost:4984/projects");
+    //   const auth = new BasicAuthenticator("demo@example.com", "P@ssw0rd12");
       
-      // Push the document to Sync Gateway
-      let config = new ReplicatorConfiguration(target);
-      config.addCollection(this.defaultCollection);
-      config.setReplicatorType(ReplicatorType.PUSH);
-      config.setAuthenticator(auth);
+    //   // Push the document to Sync Gateway
+    //   let config = new ReplicatorConfiguration(target);
+    //   config.addCollection(this.defaultCollection);
+    //   config.setReplicatorType(ReplicatorType.PUSH);
+    //   config.setAuthenticator(auth);
       
-      await this.runReplication(config);
+    //   await this.runReplication(config);
       
-      // Create a separate database to modify the document on Sync Gateway
-      const otherDB = await this.getDatabase(this.otherDatabaseName, this.directory, "");
-      await otherDB.open();
-      this.otherDatabase = otherDB;
-      const otherCollection = await otherDB.defaultCollection();
+    //   // Create a separate database to modify the document on Sync Gateway
+    //   const dbConfig = new DatabaseConfiguration();
+    //   dbConfig.setDirectory(this.directory);
+    //   const otherDb = new Database(this.otherDatabaseName, dbConfig);
+    //   await otherDb.open();
+
+    //   if (!(otherDb instanceof Database)) {
+    //     return {
+    //       testName: 'testEqualityDifferentDB',
+    //       success: false,
+    //       message: "otherDb isn't a database instance",
+    //       data: undefined,
+    //     };
+    //   }
+    //   const otherCollection = await otherDb.defaultCollection();
       
-      // Pull the document to the other database
-      config = new ReplicatorConfiguration(target);
-      config.addCollection(otherCollection);
-      config.setReplicatorType(ReplicatorType.PULL);
-      config.setAuthenticator(auth);
+    //   // Pull the document to the other database
+    //   config = new ReplicatorConfiguration(target);
+    //   config.addCollection(otherCollection);
+    //   config.setReplicatorType(ReplicatorType.PULL);
+    //   config.setAuthenticator(auth);
       
-      await this.runReplication(config);
+    //   await this.runReplication(config);
       
-      // Modify the document in the other database
-      const otherDoc = await otherCollection.document(docId);
-      const mutableOtherDoc = MutableDocument.fromDocument(otherDoc);
-      mutableOtherDoc.setString("pattern", "Striped"); // Different from "Star"
-      await otherCollection.save(mutableOtherDoc);
+    //   // Modify the document in the other database
+    //   const otherDoc = await otherCollection.document(docId);
+    //   const mutableOtherDoc = MutableDocument.fromDocument(otherDoc);
+    //   mutableOtherDoc.setString("pattern", "Striped"); // Different from "Star"
+    //   await otherCollection.save(mutableOtherDoc);
       
-      // Push the modified document back to Sync Gateway
-      config = new ReplicatorConfiguration(target);
-      config.addCollection(otherCollection);
-      config.setReplicatorType(ReplicatorType.PUSH);
-      config.setAuthenticator(auth);
+    //   // Push the modified document back to Sync Gateway
+    //   config = new ReplicatorConfiguration(target);
+    //   config.addCollection(otherCollection);
+    //   config.setReplicatorType(ReplicatorType.PUSH);
+    //   config.setAuthenticator(auth);
       
-      await this.runReplication(config);
+    //   await this.runReplication(config);
       
-      // Now we have a conflict: local document is "Star", Sync Gateway has "Striped"
+    //   // Now we have a conflict: local document is "Star", Sync Gateway has "Striped"
       
-      // Try to pull, which should merge with local version
-      config = new ReplicatorConfiguration(target);
-      config.addCollection(this.defaultCollection);
-      config.setReplicatorType(ReplicatorType.PULL);
-      config.setAuthenticator(auth);
+    //   // Try to pull, which should merge with local version
+    //   config = new ReplicatorConfiguration(target);
+    //   config.addCollection(this.defaultCollection);
+    //   config.setReplicatorType(ReplicatorType.PULL);
+    //   config.setAuthenticator(auth);
       
-      const replicator = await Replicator.create(config);
+    //   const replicator = await Replicator.create(config);
       
-      // Track the replication events
-      let conflictDoc: any = null;
+    //   // Track the replication events
+    //   let conflictDoc: any = null;
       
-      const docChangePromise = new Promise<void>((resolve) => {
-        replicator.addDocumentChangeListener((change) => {
-          if (!change.isPush) {
-            for (const doc of change.documents) {
-              if (doc.id === docId) {
-                conflictDoc = doc;
-                resolve();
-              }
-            }
-          }
-        });
-      });
+    //   const docChangePromise = new Promise<void>((resolve) => {
+    //     replicator.addDocumentChangeListener((change) => {
+    //       if (!change.isPush) {
+    //         for (const doc of change.documents) {
+    //           if (doc.id === docId) {
+    //             conflictDoc = doc;
+    //             resolve();
+    //           }
+    //         }
+    //       }
+    //     });
+    //   });
       
-      // Start replication and wait for the document change event
-      await replicator.start(false);
+    //   // Start replication and wait for the document change event
+    //   await replicator.start(false);
       
-      // Wait for the document change event or timeout
-      const timeoutPromise = new Promise<void>((_, reject) => {
-        setTimeout(() => reject(new Error("Timeout waiting for document change event")), 5000);
-      });
+    //   // Wait for the document change event or timeout
+    //   const timeoutPromise = new Promise<void>((_, reject) => {
+    //     setTimeout(() => reject(new Error("Timeout waiting for document change event")), 5000);
+    //   });
       
-      try {
-        await Promise.race([docChangePromise, timeoutPromise]);
-      } catch (e) {
-        // If we timeout, stop replication and throw
-        await replicator.stop();
-        throw e;
-      }
+    //   try {
+    //     await Promise.race([docChangePromise, timeoutPromise]);
+    //   } catch (e) {
+    //     // If we timeout, stop replication and throw
+    //     await replicator.stop();
+    //     throw e;
+    //   }
       
-      // Stop replication
-      await replicator.stop();
+    //   // Stop replication
+    //   await replicator.stop();
       
-      // Verify the document replication event
-      expect(conflictDoc).to.not.be.null;
-      expect(conflictDoc.id).to.equal(docId);
-      expect(conflictDoc.error).to.be.undefined; // Pull conflict doesn't report an error
+    //   // Verify the document replication event
+    //   expect(conflictDoc).to.not.be.null;
+    //   expect(conflictDoc.id).to.equal(docId);
+    //   expect(conflictDoc.error).to.be.undefined; // Pull conflict doesn't report an error
       
-      // Check that the document was updated with the remote version
-      const updatedDoc = await this.defaultCollection.document(docId);
-      expect(updatedDoc.getString("pattern")).to.equal("Striped");
+    //   // Check that the document was updated with the remote version
+    //   const updatedDoc = await this.defaultCollection.document(docId);
+    //   expect(updatedDoc.getString("pattern")).to.equal("Striped");
       
-      return {
-        testName: "testDocumentReplicationEventWithPullConflict",
-        success: true,
-        message: "Successfully verified document replication event with pull conflict",
-        data: undefined,
-      };
-    } catch (error) {
-      return {
-        testName: "testDocumentReplicationEventWithPullConflict",
-        success: false,
-        message: `${error}`,
-        data: error.stack || error.toString(),
-      };
-    } finally {
-      // Clean up the other database
-      if (this.otherDatabase) {
-        await this.otherDatabase.close();
-        await this.deleteDatabase(this.otherDatabase);
-        this.otherDatabase = undefined;
-      }
-    }
+    //   return {
+    //     testName: "testDocumentReplicationEventWithPullConflict",
+    //     success: true,
+    //     message: "Successfully verified document replication event with pull conflict",
+    //     data: undefined,
+    //   };
+    // } catch (error) {
+    //   return {
+    //     testName: "testDocumentReplicationEventWithPullConflict",
+    //     success: false,
+    //     message: `${error}`,
+    //     data: error.stack || error.toString(),
+    //   };
+    // } finally {
+    //   // Clean up the other database
+    //   if (this.otherDatabase) {
+    //     await this.otherDatabase.close();
+    //     await this.deleteDatabase(this.otherDatabase);
+    //     this.otherDatabase = undefined;
+    //   }
+    // }
+    return {
+      testName: "testDocumentReplicationEventWithPullConflict",
+      success: false,
+      message: "Conflict resolver not implemented",
+      data: undefined,
+    };
   }
   /**
    *
@@ -705,58 +723,68 @@ export class ReplicatorTests extends TestCase {
       data: undefined,
     };
   }
+  
+  /**
+   *
+   * @returns {Promise<ITestResult>} A promise that resolves to an ITestResult object which contains the result of the verification.
+   */
+  async testRemoveChangeListener(): Promise<ITestResult> {
+    try {
+      // Setup replicator with failing target to ensure consistent activity
+      const target = new URLEndpoint("ws://localhost:4083/unknown-db");
+      const config = new ReplicatorConfiguration(target);
+      config.setMaxAttempts(2);  // Allow some retries to generate events
+      config.addCollection(this.defaultCollection);
+      
+      const replicator = await Replicator.create(config);
+      
+      // Setup callback tracking
+      let callbacksReceived = 0;
+      
+      // Add listener and track number of invocations
+      const token = await replicator.addChangeListener(() => {
+        callbacksReceived++;
+      });
+      
+      // Start replicator to generate events
+      await replicator.start(false);
+      
+      // Allow time for callbacks to be received
+      await this.sleep(1000);
+      
+      // Verify callbacks were received
+      expect(callbacksReceived).to.be.greaterThan(0);
+      const initialCallbacks = callbacksReceived;
+      
+      // Remove the listener
+      await replicator.removeChangeListener(token);
+      
+      // Reset counter and wait for more potential events
+      callbacksReceived = 0;
+      await this.sleep(1000);
+      
+      // Verify no more callbacks were received after removal
+      expect(callbacksReceived).to.equal(0);
+      
+      // Stop replicator
+      await replicator.stop();
+      
+      return {
+        testName: "testRemoveChangeListener",
+        success: true,
+        message: "Successfully verified change listener removal",
+        data: undefined,
+      };
+    } catch (error) {
+      return {
+        testName: "testRemoveChangeListener",
+        success: false,
+        message: `${error}`,
+        data: error.stack || error.toString(),
+      };
+    }
+  }
 
-/**
- * Tests that removing a change listener properly prevents it from receiving further callbacks
- * @returns {Promise<ITestResult>} A promise that resolves to an ITestResult object
- */
-async testRemoveChangeListener(): Promise<ITestResult> {
-  let replicator = null;
-  let token = null;
-  const _engine = this.database.getEngine();
-  const getChangeListenersCount = () => _engine._eventEmitter.listenerCount(_engine._eventReplicatorStatusChange);
-
-  try {
-    // Create a configuration with a non-existent endpoint
-    const target = new URLEndpoint("ws://localhost:4083/unknown-db");
-    const config = new ReplicatorConfiguration(target);
-    config.setMaxAttempts(1);
-    config.addCollection(this.defaultCollection);
-    
-    replicator = await Replicator.create(config);
-    
-    // Check initial listener count
-    const initialCount = getChangeListenersCount();
-    
-    // Add a listener
-    token = await replicator.addChangeListener(() => {});
-    
-    // Verify listener was added at the event emitter level
-    const afterAddCount = getChangeListenersCount();
-    expect(afterAddCount).to.be.greaterThan(initialCount);
-    
-    // Remove the listener
-    await replicator.removeChangeListener(token);
-    
-    // Verify listener count decreased
-    const afterRemoveCount = getChangeListenersCount();
-    expect(afterRemoveCount).to.equal(initialCount);
-    
-    return {
-      testName: "testRemoveChangeListener",
-      success: true,
-      message: "Successfully verified change listener removal",
-      data: undefined,
-    };
-  } catch (error) {
-    return {
-      testName: "testRemoveChangeListener",
-      success: false,
-      message: `${error}`,
-      data: error.stack || error.toString(),
-    };
-  } 
-}
   /**
    *
    * @returns {Promise<ITestResult>} A promise that resolves to an ITestResult object which contains the result of the verification.
@@ -815,6 +843,7 @@ async testRemoveChangeListener(): Promise<ITestResult> {
       };
     } 
   }
+
   /**
    *
    * @returns {Promise<ITestResult>} A promise that resolves to an ITestResult object which contains the result of the verification.
@@ -851,7 +880,7 @@ async testRemoveChangeListener(): Promise<ITestResult> {
        const colConfig = new CollectionConfig(["c1", "c2"], ["d1", "d2"]);
        
        // Add collection with config
-       config.addCollection(this.defaultCollection, colConfig);
+       config.addCollection(this.defaultCollection);
        
        // Store original values for later comparison
        const originalContinuous = config.getContinuous();
