@@ -8,40 +8,40 @@ import {
   Dictionary,
   ICoreEngine,
   EngineLocator,
-} from 'cblite-js';
-import { assert } from 'chai';
-import { ITestResult } from './test-result.types';
-import * as namesData from './names_100.json';
+} from "cblite-js";
+import { assert } from "chai";
+import { ITestResult } from "./test-result.types";
+import * as namesData from "./names_100.json";
 
 export class TestCase {
   private _engine: ICoreEngine = EngineLocator.getEngine(EngineLocator.key);
   //setup shared properties
   database: Database | undefined = undefined;
   otherDatabase: Database | undefined = undefined;
-  databaseName: string = '';
-  databaseUniqueName: string = '';
-  otherDatabaseName: string = 'otherDb';
-  scopeName: string = 'testScope';
-  collectionName: string = 'testCollection';
+  databaseName: string = "";
+  databaseUniqueName: string = "";
+  otherDatabaseName: string = "otherDb";
+  scopeName: string = "testScope";
+  collectionName: string = "testCollection";
   collection: Collection | undefined = undefined;
   defaultCollection: Collection | undefined = undefined;
   scope: Scope | undefined = undefined;
   directory: string | undefined = undefined;
-  dataSource: string = this.scopeName + '.' + this.collectionName;
+  dataSource: string = this.scopeName + "." + this.collectionName;
   platform = this._engine.platform;
 
-  private TEST_DOC_TAG_KEY: string = 'TEST_TAG';
-  private TEST_DOC_SORT_KEY: string = 'TEST_SORT_ASC';
-  private TEST_DOC_REV_SORT_KEY: string = 'TEST_SORT_DESC';
+  private TEST_DOC_TAG_KEY: string = "TEST_TAG";
+  private TEST_DOC_SORT_KEY: string = "TEST_SORT_ASC";
+  private TEST_DOC_REV_SORT_KEY: string = "TEST_SORT_DESC";
 
   async init(): Promise<ITestResult> {
     try {
       //try to get the platform local directory - can't run tests if we can't save a database to a directory
       if (this._engine === undefined) {
         return {
-          testName: 'init',
+          testName: "init",
           success: false,
-          message: 'Engine not found',
+          message: "Engine not found",
           data: undefined,
         };
       }
@@ -53,7 +53,7 @@ export class TestCase {
         this.directory = filePathResult.data;
       } else {
         return {
-          testName: 'init',
+          testName: "init",
           success: false,
           message: filePathResult.message,
           data: undefined,
@@ -64,7 +64,7 @@ export class TestCase {
       const databaseResult = await this.getDatabase(
         this.databaseName,
         this.directory,
-        ''
+        ""
       );
       if (databaseResult instanceof Database) {
         this.database = databaseResult;
@@ -80,17 +80,17 @@ export class TestCase {
           this.defaultCollection === undefined
         ) {
           return {
-            testName: 'init',
+            testName: "init",
             success: false,
-            message: 'Failed to create collection',
+            message: "Failed to create collection",
             data: undefined,
           };
         }
       } else {
-        if (typeof databaseResult === 'string') {
+        if (typeof databaseResult === "string") {
           const message = databaseResult as string;
           return {
-            testName: 'init',
+            testName: "init",
             success: false,
             message: message,
             data: undefined,
@@ -98,14 +98,14 @@ export class TestCase {
         }
       }
       return {
-        testName: 'init',
+        testName: "init",
         success: true,
         message: undefined,
         data: undefined,
       };
     } catch (error) {
       return {
-        testName: 'init',
+        testName: "init",
         success: false,
         message: JSON.stringify(error),
         data: undefined,
@@ -130,22 +130,22 @@ export class TestCase {
     try {
       await db.deleteDatabase();
       return {
-        testName: this.constructor.name + '.deleteDatabase',
+        testName: this.constructor.name + ".deleteDatabase",
         success: true,
         message: undefined,
         data: undefined,
       };
     } catch (error) {
-      if (error.errorMessage !== 'No such open database') {
+      if (error.errorMessage !== "No such open database") {
         return {
-          testName: this.constructor.name + '.deleteDatabase',
+          testName: this.constructor.name + ".deleteDatabase",
           success: false,
           message: JSON.stringify(error),
           data: undefined,
         };
       } else {
         return {
-          testName: this.constructor.name + '.deleteDatabase',
+          testName: this.constructor.name + ".deleteDatabase",
           success: true,
           message: undefined,
           data: undefined,
@@ -159,14 +159,14 @@ export class TestCase {
     try {
       const result: string = await pd.getDefaultPath();
       return {
-        testName: this.constructor.name + '.getPlatformPath',
+        testName: this.constructor.name + ".getPlatformPath",
         success: true,
         message: undefined,
         data: result,
       };
     } catch (error) {
       return {
-        testName: this.constructor.name + '.getPlatformPath',
+        testName: this.constructor.name + ".getPlatformPath",
         success: false,
         message: JSON.stringify(error),
         data: undefined,
@@ -181,8 +181,8 @@ export class TestCase {
   ): Promise<Database | string> {
     const config = new DatabaseConfiguration();
     try {
-      config.directory = path ?? '';
-      config.encryptionKey = encryptionKey ?? '';
+      config.directory = path ?? "";
+      config.encryptionKey = encryptionKey ?? "";
       const db = new Database(name, config);
       return db;
     } catch (error) {
@@ -202,7 +202,7 @@ export class TestCase {
     withCollection: Collection
   ): Promise<MutableDocument> {
     const doc = new MutableDocument(withId);
-    doc.setValue('key', 1);
+    doc.setValue("key", 1);
     await withCollection.save(doc);
     const savedDoc = await withCollection.document(withId);
     assert.equal(savedDoc?.getId(), withId);
@@ -220,8 +220,8 @@ export class TestCase {
   createDocumentNumbered(start: number, end: number): MutableDocument[] {
     const docs: MutableDocument[] = [];
     for (let counter = start; counter <= end; counter++) {
-      const doc = new MutableDocument('doc-' + counter);
-      doc.setNumber('number', counter);
+      const doc = new MutableDocument("doc-" + counter);
+      doc.setNumber("number", counter);
       docs.push(doc);
     }
     return docs;
@@ -251,20 +251,15 @@ export class TestCase {
     const docs = this.createDocumentNumbered(1, number);
     try {
       for (const doc of docs) {
-        console.log(
-          `Saving doc: ${doc.getId()} into collection ${withCollection.name}`
-        );
+        console.log(`Saving doc: ${doc.getId()} into collection ${withCollection.name}`);
         await withCollection.save(doc);
       }
     } catch (error) {
-      console.log(
-        `Can't create collection docs in collection ${
+      console.log(`Can't create collection docs in collection ${
           withCollection.name
-        }: ${JSON.stringify(error)}`
-      );
+        }: ${JSON.stringify(error)}`);
       throw new Error(
-        `Can't create collection docs in collection ${
-          withCollection.name
+        `Can't create collection docs in collection ${withCollection.name
         }: ${JSON.stringify(error)}`
       );
     }
@@ -273,20 +268,20 @@ export class TestCase {
 
   createTestDoc(id: number, top: number, tag: string): MutableDocument {
     const mDoc = new MutableDocument(`doc-${id}`);
-    mDoc.setValue('nullValue', null);
-    mDoc.setValue('dataValue', 'value');
-    mDoc.setBoolean('booleanTrue', true);
-    mDoc.setBoolean('booleanFalse', false);
-    mDoc.setLong('longZero', 0);
-    mDoc.setLong('longBig', 4000000000);
-    mDoc.setLong('longSmall', -4000000000);
-    mDoc.setDouble('doubleBig', 1.0e200);
-    mDoc.setDouble('doubleSmall', -1.0e200);
-    mDoc.setString('stringNull', null);
-    mDoc.setString('stringPunk', 'Jett');
-    mDoc.setDate('dateNull', null);
-    mDoc.setDate('dateCB', new Date('2020-01-01T00:00:00.000Z'));
-    mDoc.setBlob('blobNull', null);
+    mDoc.setValue("nullValue", null);
+    mDoc.setValue("dataValue", "value");
+    mDoc.setBoolean("booleanTrue", true);
+    mDoc.setBoolean("booleanFalse", false);
+    mDoc.setLong("longZero", 0);
+    mDoc.setLong("longBig", 4000000000);
+    mDoc.setLong("longSmall", -4000000000);
+    mDoc.setDouble("doubleBig", 1.0e200);
+    mDoc.setDouble("doubleSmall", -1.0e200);
+    mDoc.setString("stringNull", null);
+    mDoc.setString("stringPunk", "Jett");
+    mDoc.setDate("dateNull", null);
+    mDoc.setDate("dateCB", new Date("2020-01-01T00:00:00.000Z"));
+    mDoc.setBlob("blobNull", null);
     mDoc.setString(this.TEST_DOC_TAG_KEY, tag);
     mDoc.setLong(this.TEST_DOC_SORT_KEY, id);
     mDoc.setLong(this.TEST_DOC_REV_SORT_KEY, top - id);
@@ -320,7 +315,7 @@ export class TestCase {
     try {
       const last = start + stop - 1;
       for (let counter = start; counter <= stop; counter++) {
-        const doc = this.createTestDoc(counter, last, 'no-tag');
+        const doc = this.createTestDoc(counter, last, "no-tag");
         await collection.save(doc);
       }
     } catch (error) {
@@ -331,7 +326,7 @@ export class TestCase {
   async loadNamesData(collection: Collection) {
     const docs = namesData;
     let count = 0;
-    for (const doc of docs['default']) {
+    for (const doc of docs["default"]) {
       const mutableDoc = new MutableDocument(
         `doc-${count.toString()}`,
         null,
@@ -353,7 +348,7 @@ export class TestCase {
   ): Promise<ITestResult> {
     try {
       for (let counter = 1; counter <= number; counter++) {
-        const id = 'doc-' + counter;
+        const id = "doc-" + counter;
         const doc = await withCollection.document(id);
         const dictionary = doc.toDictionary();
         const json = JSON.stringify(dictionary);
@@ -371,14 +366,14 @@ export class TestCase {
       return {
         testName: testName,
         success: false,
-        message: 'failed',
+        message: "failed",
         data: JSON.stringify(error),
       };
     }
     return {
       testName: testName,
       success: true,
-      message: 'success',
+      message: "success",
       data: undefined,
     };
   }
@@ -407,7 +402,7 @@ export class TestCase {
       return {
         testName: testName,
         success: false,
-        message: 'Document not found',
+        message: "Document not found",
         data: undefined,
       };
     } else {
@@ -418,14 +413,14 @@ export class TestCase {
         return {
           testName: testName,
           success: true,
-          message: 'success',
+          message: "success",
           data: undefined,
         };
       } else {
         return {
           testName: testName,
           success: false,
-          message: 'failed',
+          message: "failed",
           data: "id or data doesn't match",
         };
       }
@@ -437,7 +432,7 @@ export class TestCase {
     const query = this.database?.createQuery(queryString);
     const resultSet = await query.execute();
     if (resultSet != null) {
-      return Number.parseInt(resultSet[0]['docCount']);
+      return Number.parseInt(resultSet[0]["docCount"]);
     }
     return 0;
   }
@@ -449,7 +444,7 @@ export class TestCase {
     const query = this.database?.createQuery(queryString);
     const resultSet = await query.execute();
     if (resultSet != null) {
-      return Number.parseInt(resultSet[0]['docCount']);
+      return Number.parseInt(resultSet[0]["docCount"]);
     }
     return 0;
   }
