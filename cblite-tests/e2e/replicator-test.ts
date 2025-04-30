@@ -9,21 +9,27 @@ import {
   URLEndpoint,
   CollectionConfig,
   Collection,
-  MutableDocument,
-  DatabaseConfiguration,
-  Database,
 } from "cblite-js";
 import { expect } from "chai";
 
 /**
  * ReplicatorTests - reminder all test cases must start with 'test' in the name of the method or they will not run
  * */
+
+/**
+ * ReplicatorTests - needs running Sync Gate to pass, visit README.md for more information
+ * */
 export class ReplicatorTests extends TestCase {
   constructor() {
     super();
   }
 
-  private readonly SYNC_GATEWAY_URL = "ws://localhost:4984/projects";
+  platformDomains = {
+    ios: 'localhost',
+    android: '10.0.2.2',
+  };
+
+  private readonly SYNC_GATEWAY_URL = `ws://${this.platformDomains?.[this.platform] ?? 'WRONG PLATFORM'}:4984/projects`;
   private readonly TEST_USERNAME = "demo@example.com";
   private readonly TEST_PASSWORD = "P@ssw0rd12";
 
